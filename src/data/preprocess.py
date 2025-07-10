@@ -50,18 +50,6 @@ class ECG_Dataset(Dataset):
         y = self.labels[idx]
         return x_signal, x_handcrafted, y
 
-    # def only_handcrafted(self):
-    #     self.use_handcrafted = True
-    #     self.use_signals = False
-
-    # def only_signals(self):
-    #     self.use_handcrafted = False
-    #     self.use_signals = True
-    
-    # def use_both(self):
-    #     self.use_handcrafted = True
-    #     self.use_signals = True
-
 def visualise_ecg_by_id(df, ecg_id, sampling_rate, path):
     file = df.filename_lr.iloc[ecg_id] if sampling_rate == 100 else df.filename_hr.iloc[ecg_id]
     signal, fields = wfdb.rdsamp(path + file)

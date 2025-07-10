@@ -10,12 +10,13 @@ from src.data.preprocess import ECG_Dataset
 from src.models.evaluation import evaluate_model
 import tqdm
 from torch.utils.data import DataLoader
+import json
 
 def train_model(model, train_set=None, test_set=None, val_set=None, class_names=None, epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, device=None):
     if device is None:
         device = get_device()
     if train_set is None or test_set is None or val_set is None or class_names is None:
-        train_set, test_set, val_set, class_names = get_dataloaders()
+        train_set, test_set, val_set, class_names, features_num = get_dataloaders()
     size = len(train_set)
     if not model is None and not is_handcrafted:
         model = BaseModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST)).to(device)
@@ -72,11 +73,9 @@ def train_model(model, train_set=None, test_set=None, val_set=None, class_names=
         torch.save(model.state_dict(), 'CNN_ECG_detection.pth')
     else:
         torch.save(model.state_dict(), 'handcrafted_CNN_ECG_detection.pth')
-    scores = evaluate_model(model, test_set, is_handcrafted, device=None)
-    print(f"Test F1: {scores["f1_None"]}")
     print("Training complete! Model saved")
     return model
 
 if __name__ == '__main__':
-    train, test, valid, names = get_dataloaders()
+    train, test, valid, names, features_name = get_dataloaders()
     train_model(train, test, valid, names, is_handcrafted=True, epochs=20, batch_size=128)

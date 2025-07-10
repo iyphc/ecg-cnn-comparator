@@ -24,33 +24,6 @@ def parse_args():
     parser.add_argument("--statistics", action="store_true", help="Print statistics")
     return parser.parse_args()
 
-def train_arg(args, train_loader, test_loader, valid_loader, out_classes, features_num):
-    model_tmp = None
-    if args.handcrafted:
-        model_tmp = HandcraftedModel(
-            in_channels=12,
-            out_classes=out_classes,
-            handcrafted_classes=features_num
-        )
-    else:
-        model_tmp = BaseModel(
-            in_channels=12,
-            out_classes=out_classes
-        )
-
-    train_model(
-        model_tmp,
-        train_loader,
-        test_loader,
-        valid_loader,
-        is_handcrafted=args.handcrafted,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        learning_rate=args.lr
-    )
-    return model_tmp
-
-
 def main():
     args = parse_args()
     train_loader, test_loader, valid_loader, class_names, features_num = get_dataloaders(batch_size=args.batch_size)

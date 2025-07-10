@@ -39,24 +39,6 @@ def basic_scores(all_true, all_pred):
 
     return scores
 
-# def bootstrap_metric(y_true, y_pred, metric_fn, n_bootstrap=1000, random_state=42):
-#     rng = np.random.default_rng(random_state)
-#     n = len(y_true)
-#     scores = []
-
-#     for _ in range(n_bootstrap):
-#         idxs = rng.integers(0, n, n)
-#         score = metric_fn(y_true[idxs], y_pred[idxs])
-#         scores.append(score)
-
-#     return np.array(scores)
-
-# def confidence_interval(samples, alpha=0.95):
-#     lower = np.percentile(samples, (1 - alpha) / 2 * 100)
-#     upper = np.percentile(samples, (1 + alpha) / 2 * 100)
-#     return lower, upper
-
-
 def evaluate_model(model, test_loader, is_handcrafted=False, device=None):
     if device is None:
         device = get_device()

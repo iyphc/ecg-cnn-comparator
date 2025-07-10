@@ -8,6 +8,7 @@ import pandas as pd
 import torch
 import os
 from sklearn.metrics import f1_score, roc_auc_score
+from collections import defaultdict
 
 def confusion_matrix(all_true, all_pred):
     all_true = np.array(all_true)
@@ -20,6 +21,39 @@ def confusion_matrix(all_true, all_pred):
 
     return matrix
 
+def compare_models(base_model, handcrafted_model, test_loader, seed=52, repet_number=1000, alpha=0.05):
+    np.random.seed(seed)
+    base_model_pred, all_true = evaluate_model(base_model, test_loader)
+    handcrafted_model_pred, _ = evaluate_model(handcrafted_model, test_loader, is_handcrafted=True)
+    n_samples = len(all_true)
+    
+    delta_dict = defaultdict(list)
+
+    all_true = np.array(all_true)
+    base_model_pred = np.array(base_model_pred)
+    handcrafted_model_pred = np.array(handcrafted_model_pred)
+
+    for _ in range(repet_number):
+        idx = np.random.choice(n_samples, size=n_samples, replace=True)
+        mixed_all_true = all_true[idx]
+        mixed_base_pred = base_model_pred[idx]
+        mixed_handcrafted_pred = handcrafted_model_pred[idx]
+
+        base_score = basic_scores(mixed_all_true, mixed_base_pred)
+        hand_score = basic_scores(mixed_all_true, mixed_handcrafted_pred)
+
+        for name in base_score:
+            diff = np.array(base_score[name]) - np.array(hand_score[name])
+            delta_dict[name].append(diff)
+
+    ci = {}
+    for name, deltas in delta_dict.items():
+        lower = np.percentile(deltas, 100 * (alpha / 2))
+        upper = np.percentile(deltas, 100 * (1 - alpha / 2))
+        ci[name] = [lower, upper]
+
+    return ci
+
 
 def basic_scores(all_true, all_pred):
     scores = {}
@@ -31,9 +65,9 @@ def basic_scores(all_true, all_pred):
     scores["specificity"] = matrix["TN"] / (matrix["TN"] + matrix["FP"] + eps)
     scores["mean_sensitivity"] = sum(scores["sensitivity"]) / len(scores["sensitivity"])
     scores["mean_specificity"] = sum(scores["specificity"]) / len(scores["specificity"])
-    scores['f1_samples'] = f1_score(all_true, all_pred, average='samples')
-    scores['f1_macro'] = f1_score(all_true, all_pred, average='macro')
-    scores['f1_None'] = f1_score(all_true, all_pred, average=None)
+    scores['f1_samples'] = f1_score(all_true, all_pred, average='samples', zero_division=0)
+    scores['f1_macro'] = f1_score(all_true, all_pred, average='macro', zero_division=0)
+    scores['f1_None'] = f1_score(all_true, all_pred, average=None, zero_division=0)
     scores['roc-auc-average'] = roc_auc_score(all_true, all_pred, multi_class='ovr')
     scores['roc-auc-elems'] = roc_auc_score(all_true, all_pred, average=None)
 
@@ -65,15 +99,13 @@ def evaluate_model(model, test_loader, is_handcrafted=False, device=None):
             all_preds.extend(preds)
             all_true.extend(true)
     
-    scores = basic_scores(all_true, all_preds)
-    return scores
+    return all_preds, all_true
 
 if __name__ == "__main__":
     is_handcrafted = True
-    _, test, _, names = get_dataloaders()
+    _, test, _, names, features_num = get_dataloaders()
     if is_handcrafted:
-        handcrafted_size = next(iter(test))[1].shape[1]
-        model = HandcraftedModel(in_channels=12, out_classes=len(names), handcrafted_classes=handcrafted_size)
+        model = HandcraftedModel(in_channels=12, out_classes=len(names), handcrafted_classes=features_num)
         state_dict = torch.load("handcrafted_CNN_ECG_detection.pth", weights_only=False)
         model.load_state_dict(state_dict)
     else:
@@ -81,18 +113,17 @@ if __name__ == "__main__":
         state_dict = torch.load("CNN_ECG_detection.pth", weights_only=False)
         model.load_state_dict(state_dict)
 
-    scores = evaluate_model(model=model, test_loader=test, is_handcrafted=True)
     print("\n\n---------")
     print("SCORES:")
     print("---------\n")
-    print(f"Sensitivity: {scores["sensitivity"]}")
-    print(f"Specificity: {scores["specificity"]}\n")
-    print(f"Mean sensitivity: {scores["mean_sensitivity"]:.2%}")
-    print(f"Mean specificity: {scores["mean_specificity"]:.2%}\n")
-    print(f"F1: {scores["f1_None"]}")
-    print(f"F1_samples: {scores["f1_samples"]:.2%}")
-    print(f"F1_macro: {scores["f1_macro"]:.2%}\n")
-    print(f"ROC-AUC: {scores["roc-auc-average"]:.2}")
-    print(f"ROC-AUC-elem: {scores["roc-auc-elems"]}")
+
+    base_model_pred, all_pred = evaluate_model(model=model, test_loader=test, is_handcrafted=True)
+    scores = basic_scores(all_pred, base_model_pred)
+
+    for name in scores:
+        print(f"{name}: {scores[name]}")
+
+    
+    
 
 

@@ -1,4 +1,5 @@
-from src.models.utils import get_device, get_dataloaders
+from src.data.loader import get_dataloaders
+from src.models.utils import get_device
 from src.models.base_model import BaseModel
 from src.models.cnn_handcrafted import HandcraftedModel
 import tqdm

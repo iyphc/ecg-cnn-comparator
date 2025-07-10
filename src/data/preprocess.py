@@ -1,5 +1,6 @@
 import os
 import ast
+import json
 import wfdb
 import torch
 import numpy as np
@@ -102,11 +103,12 @@ def handcrafted_extraction(df: pd.DataFrame):
     
     features = df[['age', 'sex', 'height', 'weight']].to_numpy(dtype=np.float32)
 
-    return features
+    return features, features.shape[1]
 
 def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
             sampling_rate=100, reduced_dataset=True):
     
+    print("STARTED PREPAIRING DATASET\n")
     if not os.path.exists(path + 'ptbxl_database.csv'):
         raise FileNotFoundError(f"Database file not found at {path}ptbxl_database.csv")
     
@@ -117,7 +119,7 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
     Y['scp_codes'] = Y['scp_codes'].apply(ast.literal_eval)
     
     X = load_raw_data(Y, sampling_rate, path)
-    X_handcrafted = handcrafted_extraction(Y)
+    X_handcrafted, features_num = handcrafted_extraction(Y)
 
     X = normalize(X)
     X_handcrafted = normalize(X_handcrafted)
@@ -176,27 +178,38 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
         torch.save(test_dataset, 'data/processed/test_dataset.pt')
     if (not os.path.exists('data/processed/diseases_names.pt')):
         torch.save(mlb.classes_, 'data/processed/diseases_names.pt')
+    if (not os.path.exists('data/processed/diseases_names.pt')):
+        torch.save(features_num, 'data/processed/features_num.pt')
+    if (not os.path.exists('data/processed/features_num.pt')):
+        with open("data/processed/features_num.json", "w") as f:
+            json.dump({"features_num": features_num}, f, indent=4)
     
     print("Data saved successfully!")
-    return train_dataset, test_dataset, mlb.classes_
+    return train_dataset, test_dataset, mlb.classes_, features_num
 
 def load_ECG_dataset(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
             sampling_rate=100, reduced_dataset=True):
     train_dataset = None
     test_dataset = None
     diseases_names = None
+    features_num = -1
     if (os.path.exists('data/processed/train_dataset.pt')):
         train_dataset = torch.load('data/processed/train_dataset.pt', weights_only=False)
     if (os.path.exists('data/processed/test_dataset.pt')):
         test_dataset = torch.load('data/processed/test_dataset.pt', weights_only=False)
     if (os.path.exists('data/processed/diseases_names.pt')):
         diseases_names = torch.load('data/processed/diseases_names.pt', weights_only=False)
+    if (os.path.exists('data/processed/features_num.json')):
+        with open('data/processed/features_num.json', 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            features_num = data["features_num"]
         
-    if ((train_dataset is None) or (test_dataset is None) or (diseases_names is None)):
-        train_dataset, test_dataset, diseases_names = handle(path=path, sampling_rate=sampling_rate, reduced_dataset=reduced_dataset)
+    if ((train_dataset is None) or (test_dataset is None) or (diseases_names is None) or features_num == -1):
+        print("THERE IS NO CORRECT DATASET")
+        train_dataset, test_dataset, diseases_names, features_num = handle(path=path, sampling_rate=sampling_rate, reduced_dataset=reduced_dataset)
     
     print("Data loaded")
-    return train_dataset, test_dataset, diseases_names
+    return train_dataset, test_dataset, diseases_names, features_num
     
 
 if __name__ == "__main__":

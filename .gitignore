@@ -1,0 +1,8 @@
+note
+venv
+__pycache__
+.DS_Store
+notebooks
+data/processed
+data/raw
+*pth

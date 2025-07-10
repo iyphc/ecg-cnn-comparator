@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.models.utils import get_device, get_dataloaders
+from src.models.utils import get_device
+from src.data.loader import get_dataloaders
 from src.data.constants import REDUCED_DISEASES_LIST 
 from src.models.base_model import BaseModel
 from src.models.cnn_handcrafted import HandcraftedModel

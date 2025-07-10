@@ -4,7 +4,7 @@ import torch
 from src.models.utils import get_device
 from src.models.train import train_model
 from src.models.evaluation import evaluate_model
-from src.models.utils import get_dataloaders
+from src.data.loader import get_dataloaders
 from src.models.cnn_handcrafted import HandcraftedModel
 from src.models.base_model import BaseModel
 from src.models.cnn_handcrafted import HandcraftedModel

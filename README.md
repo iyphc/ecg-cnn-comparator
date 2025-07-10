@@ -5,24 +5,19 @@
 ```
 ECG_models_comparison/
 ├── configs/                # Конфигурационные файлы (гиперпараметры, настройки)
-├── data/                   # Данные для обучения и тестирования
-│   └── examples/           # Примеры данных
 ├── main.py                 # Главный скрипт запуска
 ├── src/
 │   ├── data/               # Модули для работы с данными
 │   │   ├── constants.py
 │   │   ├── loader.py
 │   │   ├── preprocess.py
-│   │   └── split.py
 │   └── models/             # Модули моделей и утилиты
 │       ├── base_model.py
 │       ├── cnn_handcrafted.py
 │       ├── cnn_raw.py
 │       ├── evaluation.py
-│       ├── resnet18_2d.py
 │       ├── train.py
 │       └── utils.py
-└── test_model.py           # Скрипт для тестирования моделей
 ```
 
 ## Описание

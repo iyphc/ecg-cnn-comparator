@@ -1,3 +1,5 @@
+import tqdm
+import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,11 +8,8 @@ from src.data.loader import get_dataloaders
 from src.data.constants import REDUCED_DISEASES_LIST 
 from src.models.base_model import BaseModel
 from src.models.cnn_handcrafted import HandcraftedModel
-from src.data.preprocess import ECG_Dataset
-from src.models.evaluation import evaluate_model
-import tqdm
-from torch.utils.data import DataLoader
-import json
+
+
 
 def train_model(model, train_set=None, test_set=None, val_set=None, class_names=None, epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, device=None):
     if device is None:
@@ -77,5 +76,7 @@ def train_model(model, train_set=None, test_set=None, val_set=None, class_names=
     return model
 
 if __name__ == '__main__':
-    train, test, valid, names, features_name = get_dataloaders()
-    train_model(train, test, valid, names, is_handcrafted=True, epochs=20, batch_size=128)
+    train_load, test_load, valid_load, class_names, features_name = get_dataloaders()
+    out_classes = len(class_names)
+    model = BaseModel(12, out_classes)
+    train_model(model, train_load, test_load, valid_load, class_names, is_handcrafted=True, epochs=20, batch_size=128)

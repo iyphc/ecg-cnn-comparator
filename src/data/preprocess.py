@@ -122,6 +122,13 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
     X = load_raw_data(Y, sampling_rate, path)
     X_handcrafted, features_num = handcrafted_extraction(Y)
 
+
+    # Очистка данных от None значений
+    idx = [i for i, x in enumerate(X) if x is not None]
+    X = X[idx]
+    X_handcrafted = X_handcrafted[idx]
+    Y = Y.iloc[idx]
+
     X = normalize(X)
     X_handcrafted = normalize(X_handcrafted)
 
@@ -153,7 +160,6 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
     test_fold = 10
     mask_train = Y['strat_fold'] != test_fold
     mask_test = Y['strat_fold'] == test_fold
-
 
     X_train = X[mask_train.to_numpy()]
     X_test = X[mask_test.to_numpy()]

@@ -7,7 +7,6 @@ from src.models.base_model import BaseModel
 class HandcraftedModel(BaseModel):
     def __init__(self, in_channels: int, out_classes: int, handcrafted_classes: int):
         super().__init__(in_channels=in_channels, out_classes=out_classes)
-        self.device = get_device()
         self.hc_spread = nn.Linear(handcrafted_classes, 32)
         self.hc_fc = nn.Linear(out_classes + 32, 128)
         self.fc = nn.Linear(128, out_classes)

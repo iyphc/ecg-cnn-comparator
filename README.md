@@ -30,6 +30,7 @@ ECG_models_comparison/
 │   └── models/             # Модули моделей и утилиты
 │       ├── base_model.py
 │       ├── cnn_handcrafted.py
+│       ├── resnet.py
 │       ├── evaluation.py
 │       ├── train.py
 │       └── utils.py

@@ -16,7 +16,7 @@ def train_model(model, train_load=None, test_load=None, val_load=None, class_nam
     if device is None:
         device = get_device()
     if train_load is None or test_load is None or val_load is None or class_names is None or features_num is None:
-        train_load, test_load, val_load, class_names, features_num = get_dataloaders()
+        train_load, test_load, val_load, class_names, features_num = get_dataloaders(batch_size=batch_size)
     size = len(train_load)
     if model is None:
         if is_handcrafted:

@@ -1,3 +1,4 @@
+from math import e
 import tqdm
 import json
 import torch
@@ -11,17 +12,18 @@ from src.models.cnn_handcrafted import HandcraftedModel
 
 
 
-def train_model(model, train_set=None, test_set=None, val_set=None, class_names=None, epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, device=None):
+def train_model(model, train_set=None, test_set=None, val_set=None, class_names=None, features_num=None, epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, device=None):
     if device is None:
         device = get_device()
-    if train_set is None or test_set is None or val_set is None or class_names is None:
+    if train_set is None or test_set is None or val_set is None or class_names is None or features_num is None:
         train_set, test_set, val_set, class_names, features_num = get_dataloaders()
     size = len(train_set)
-    if not model is None and not is_handcrafted:
-        model = BaseModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST)).to(device)
-    elif not model is None:
-        handcrafted_size = next(iter(train_set))[1].shape[1]
-        model = HandcraftedModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST), handcrafted_classes=handcrafted_size).to(device)
+    if model is None:
+        if is_handcrafted:
+            model = HandcraftedModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST), handcrafted_classes=features_num).to(device)
+        else:
+            model = BaseModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST)).to(device)
+        
 
     loss_fn = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)

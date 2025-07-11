@@ -173,13 +173,10 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
 
     if (not os.path.exists('data/processed/train_dataset.pt')):
         torch.save(train_dataset, 'data/processed/train_dataset.pt')
-    
     if (not os.path.exists('data/processed/test_dataset.pt')):
         torch.save(test_dataset, 'data/processed/test_dataset.pt')
     if (not os.path.exists('data/processed/diseases_names.pt')):
         torch.save(mlb.classes_, 'data/processed/diseases_names.pt')
-    if (not os.path.exists('data/processed/diseases_names.pt')):
-        torch.save(features_num, 'data/processed/features_num.pt')
     if (not os.path.exists('data/processed/features_num.pt')):
         with open("data/processed/features_num.json", "w") as f:
             json.dump({"features_num": features_num}, f, indent=4)

@@ -55,8 +55,11 @@ def compare_models(base_model, handcrafted_model, test_loader, seed=52, repet_nu
     return ci
 
 
-def basic_scores(all_true, all_pred):
+def basic_scores(all_true, all_pred, threshold=0.5):
     scores = {}
+
+    all_pred_prob = np.array(all_pred)
+    all_pred = np.array(all_pred) > threshold
 
     matrix = confusion_matrix(all_true, all_pred)
     eps = 1e-8
@@ -66,10 +69,11 @@ def basic_scores(all_true, all_pred):
     scores["mean_sensitivity"] = sum(scores["sensitivity"]) / len(scores["sensitivity"])
     scores["mean_specificity"] = sum(scores["specificity"]) / len(scores["specificity"])
     scores['f1_samples'] = f1_score(all_true, all_pred, average='samples', zero_division=0)
+    scores['f1_weighted'] = f1_score(all_true, all_pred, average='weighted', zero_division=0)
     scores['f1_macro'] = f1_score(all_true, all_pred, average='macro', zero_division=0)
     scores['f1_None'] = f1_score(all_true, all_pred, average=None, zero_division=0)
-    scores['roc-auc-average'] = roc_auc_score(all_true, all_pred, multi_class='ovr')
-    scores['roc-auc-elems'] = roc_auc_score(all_true, all_pred, average=None)
+    scores['roc-auc-macro'] = roc_auc_score(all_true, all_pred_prob, multi_class='ovo', average='macro')
+    scores['roc-auc-elems'] = roc_auc_score(all_true, all_pred_prob, average=None)
 
     return scores
 
@@ -93,9 +97,8 @@ def evaluate_model(model, test_loader, is_handcrafted=False, device=None):
                 X_handcrafted = X_handcrafted.to(device)
                 outputs = model(X, X_handcrafted)
             
-            preds = (torch.sigmoid(outputs) > 0.5).cpu().numpy()
+            preds = torch.sigmoid(outputs).cpu().numpy()
             true = y.cpu().numpy()
-            
             all_preds.extend(preds)
             all_true.extend(true)
     
@@ -107,23 +110,21 @@ if __name__ == "__main__":
     if is_handcrafted:
         model = HandcraftedModel(in_channels=12, out_classes=len(names), handcrafted_classes=features_num)
         state_dict = torch.load("handcrafted_CNN_ECG_detection.pth", weights_only=False)
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict['model_state_dict'])
+        model.threshold = state_dict['threshold']
     else:
         model = BaseModel(in_channels=12, out_classes=len(names))
         state_dict = torch.load("CNN_ECG_detection.pth", weights_only=False)
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict['model_state_dict'])
+        model.threshold = state_dict['threshold']
 
     print("\n\n---------")
     print("SCORES:")
     print("---------\n")
 
-    base_model_pred, all_pred = evaluate_model(model=model, test_loader=test, is_handcrafted=True)
-    scores = basic_scores(all_pred, base_model_pred)
+    base_model_pred, all_pred = evaluate_model(model=model, test_loader=test, is_handcrafted=is_handcrafted)
+    scores = basic_scores(all_pred, base_model_pred, threshold=model.threshold)
 
     for name in scores:
         print(f"{name}: {scores[name]}")
-
     
-    
-
-

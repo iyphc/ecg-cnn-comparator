@@ -12,12 +12,12 @@ from src.models.cnn_handcrafted import HandcraftedModel
 
 
 
-def train_model(model, train_set=None, test_set=None, val_set=None, class_names=None, features_num=None, epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, device=None):
+def train_model(model, train_load=None, test_load=None, val_load=None, class_names=None, features_num=None, epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, device=None):
     if device is None:
         device = get_device()
-    if train_set is None or test_set is None or val_set is None or class_names is None or features_num is None:
-        train_set, test_set, val_set, class_names, features_num = get_dataloaders()
-    size = len(train_set)
+    if train_load is None or test_load is None or val_load is None or class_names is None or features_num is None:
+        train_load, test_load, val_load, class_names, features_num = get_dataloaders()
+    size = len(train_load)
     if model is None:
         if is_handcrafted:
             model = HandcraftedModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST), handcrafted_classes=features_num).to(device)
@@ -33,7 +33,7 @@ def train_model(model, train_set=None, test_set=None, val_set=None, class_names=
         running_loss = 0
         total = 0
 
-        for X, X_handcrafted, y in tqdm.tqdm(train_set, desc=f'Epoch {i+1}/{epochs}'):
+        for X, X_handcrafted, y in tqdm.tqdm(train_load, desc=f'Epoch {i+1}/{epochs}'):
             X, y = X.to(device), y.to(device)
             pred = None
             if not is_handcrafted:
@@ -53,7 +53,7 @@ def train_model(model, train_set=None, test_set=None, val_set=None, class_names=
         model.eval()
         Q_val = 0
         count_val = 0
-        for X, X_handcrafted, y in tqdm.tqdm(val_set, desc=f'validation'):
+        for X, X_handcrafted, y in tqdm.tqdm(val_load, desc=f'validation'):
             X, y = X.to(device), y.to(device)
             with torch.no_grad():
                 pred = None

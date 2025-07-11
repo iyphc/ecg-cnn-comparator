@@ -2,7 +2,7 @@ import os
 import argparse
 from numpy import False_
 import torch
-from src.models.utils import get_device
+from src.models.utils import get_device, load_model
 from src.models.train import train_model
 from src.models.evaluation import evaluate_model
 from src.data.loader import get_dataloaders
@@ -28,7 +28,6 @@ def main():
     args = parse_args()
     train_loader, test_loader, valid_loader, class_names, features_num = get_dataloaders(batch_size=args.batch_size)
     out_classes = len(class_names)
-    print(features_num)
     if args.compare:
         models = list()
         models.append(BaseModel(
@@ -54,8 +53,7 @@ def main():
                 learning_rate=args.lr
             )
         else:
-            state_dict = torch.load("handcrafted_CNN_ECG_detection.pth", weights_only=False)
-            models[1].load_state_dict(state_dict)
+            load_model(models[1], "handcrafted_CNN_ECG_detection.pth")
             print("HANDCRAFTED MODEL IS LOADED")
         if args.train or not os.path.exists("CNN_ECG_detection.pth"):
             models[0] = train_model(
@@ -71,8 +69,7 @@ def main():
                 learning_rate=args.lr
             )
         else:
-            state_dict = torch.load("CNN_ECG_detection.pth", weights_only=False)
-            models[0].load_state_dict(state_dict)
+            load_model(models[0], "handcrafted_CNN_ECG_detection.pth")
             print("BASE MODEL IS LOADED")
         
         all_preds, all_true = evaluate_model(models[0], test_loader, is_handcrafted=False)
@@ -140,13 +137,11 @@ def main():
         have_to_train = True
 
         if (not args.handcrafted) and os.path.exists("CNN_ECG_detection.pth"):
-            state_dict = torch.load("CNN_ECG_detection.pth", weights_only=False)
-            model_tmp.load_state_dict(state_dict)
+            load_model(model_tmp, "CNN_ECG_detection.pth")
             have_to_train = False
             print("BASE MODEL IS LOADED\n")
         elif args.handcrafted and os.path.exists("handcrafted_CNN_ECG_detection.pth"):
-            state_dict = torch.load("handcrafted_CNN_ECG_detection.pth", weights_only=False)
-            model_tmp.load_state_dict(state_dict)
+            load_model(model_tmp, "handcrafted_CNN_ECG_detection.pth")
             have_to_train = False
             print("HANDCRAFTED MODEL IS LOADED\n")
         

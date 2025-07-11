@@ -75,6 +75,7 @@ def load_raw_data(df, sampling_rate, path):
             signal, _ = wfdb.rdsamp(path + filename)
             data.append(signal)
         except Exception as e:
+            data.append(None)
             print(f"Failed to load file {filename}: {e}")
     
     if not data:

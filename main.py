@@ -28,6 +28,7 @@ def main():
     args = parse_args()
     train_loader, test_loader, valid_loader, class_names, features_num = get_dataloaders(batch_size=args.batch_size)
     out_classes = len(class_names)
+    print(features_num)
     if args.compare:
         models = list()
         models.append(BaseModel(
@@ -42,10 +43,11 @@ def main():
         if args.train or not os.path.exists("handcrafted_CNN_ECG_detection.pth"):
             models[1] = train_model(
                 models[1],
-                train_loader,
-                test_loader,
-                valid_loader,
-                class_names,
+                train_load=train_loader,
+                test_load=test_loader,
+                val_load=valid_loader,
+                class_names=class_names,
+                features_num=features_num,
                 is_handcrafted=True,
                 epochs=args.epochs,
                 batch_size=args.batch_size,
@@ -58,10 +60,11 @@ def main():
         if args.train or not os.path.exists("CNN_ECG_detection.pth"):
             models[0] = train_model(
                 models[0],
-                train_loader,
-                test_loader,
-                valid_loader,
-                class_names,
+                train_load=train_loader,
+                test_load=test_loader,
+                val_load=valid_loader,
+                class_names=class_names,
+                features_num=features_num,
                 is_handcrafted=False,
                 epochs=args.epochs,
                 batch_size=args.batch_size,

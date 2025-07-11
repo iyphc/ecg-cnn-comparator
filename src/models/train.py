@@ -12,7 +12,7 @@ from src.models.cnn_handcrafted import HandcraftedModel
 
 
 
-def train_model(model, train_load=None, test_load=None, val_load=None, class_names=None, features_num=None, epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, device=None):
+def train_model(model=None, train_load=None, test_load=None, val_load=None, class_names=None, features_num=None, epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, device=None):
     if device is None:
         device = get_device()
     if train_load is None or test_load is None or val_load is None or class_names is None or features_num is None:
@@ -23,7 +23,8 @@ def train_model(model, train_load=None, test_load=None, val_load=None, class_nam
             model = HandcraftedModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST), handcrafted_classes=features_num).to(device)
         else:
             model = BaseModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST)).to(device)
-        
+    
+    model.to(device)
 
     loss_fn = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)

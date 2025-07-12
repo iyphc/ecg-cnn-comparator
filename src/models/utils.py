@@ -11,7 +11,7 @@ def get_device():
 def save_model(model, path):
     torch.save({
             'model_state_dict': model.state_dict(), 
-            'threshold': model.threshold}, 'path'
+            'threshold': model.threshold}, path
         )
 def load_model(model, path):
     state_dict = torch.load(path, weights_only=False)

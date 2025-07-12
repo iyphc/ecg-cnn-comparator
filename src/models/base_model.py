@@ -3,22 +3,37 @@ import torch.nn as nn
 import torch.nn.functional as F
 from src.models.utils import get_device
 
+
 class BaseModel(nn.Module):
     def __init__(self, in_channels: int, out_classes: int):
         super().__init__()
-        self.device = get_device()
-        self.conv1 = nn.Conv1d(in_channels, 16, kernel_size=12, stride=4)
-        self.conv2 = nn.Conv1d(16, 64, kernel_size=12, stride=4)
-        self.conv3 = nn.Conv1d(64, 256, kernel_size=12, stride=2)
-        self.fc1 = nn.Linear(256*25, 256)
-        self.fc2 = nn.Linear(256, out_classes)
+        self.seq = nn.Sequential(
+            nn.Conv1d(in_channels, 16, kernel_size=8, stride=2, padding=3),
+            nn.BatchNorm1d(16),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2, stride=2),
+            nn.Dropout1d(0.25),
+
+            nn.Conv1d(16, 64, kernel_size=8, stride=2, padding=3),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2, stride=2),
+            nn.Dropout1d(0.25),
+
+            nn.Conv1d(64, 256, kernel_size=8, stride=2, padding=3),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.AdaptiveMaxPool1d(output_size=10),
+            nn.Dropout1d(0.25),
+
+            nn.Flatten(),
+            nn.Linear(256 * 10, 256),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(256, out_classes)
+        )
     def forward(self, x):
-        x = F.relu(self.conv1(x))      # (int_channels, 1000) -> (16, 248)
-        x = F.relu(self.conv2(x))      # (16, 248) -> (64, 60)
-        x = F.relu(self.conv3(x))      # (64, 60) -> (256, 25)
-        x = torch.flatten(x, 1)        # (256, 25) -> 6400
-        x = F.relu(self.fc1(x))        # 6400 → 256
-        x = self.fc2(x)                # 256 → out_classes
+        x = self.seq(x)
         return x
 
 

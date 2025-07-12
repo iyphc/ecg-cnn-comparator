@@ -75,6 +75,7 @@ def load_raw_data(df, sampling_rate, path):
             signal, _ = wfdb.rdsamp(path + filename)
             data.append(signal)
         except Exception as e:
+            data.append(None)
             print(f"Failed to load file {filename}: {e}")
     
     if not data:
@@ -101,9 +102,10 @@ def handcrafted_extraction(df: pd.DataFrame):
     df['height'] = df['height'].fillna(df['height'].median())
     df['weight'] = df['weight'].fillna(df['weight'].median())
     
-    features = df[['age', 'sex', 'height', 'weight']].to_numpy(dtype=np.float32)
+    binary_features = df[['sex']].to_numpy(dtype=np.float32)
+    non_binary_features = df[['age', 'height', 'weight']].to_numpy(dtype=np.float32)
 
-    return features, features.shape[1]
+    return binary_features, non_binary_features
 
 def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
             sampling_rate=100, reduced_dataset=True):
@@ -119,10 +121,20 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
     Y['scp_codes'] = Y['scp_codes'].apply(ast.literal_eval)
     
     X = load_raw_data(Y, sampling_rate, path)
-    X_handcrafted, features_num = handcrafted_extraction(Y)
+    X_binary, X_non_binary = handcrafted_extraction(Y)
 
+    X_non_binary = normalize(X_non_binary)
     X = normalize(X)
-    X_handcrafted = normalize(X_handcrafted)
+    X_handcrafted = np.hstack([X_binary, X_non_binary])
+    
+    features_num = X_handcrafted.shape[1]
+
+    # Очистка данных от None значений
+    idx = [i for i, x in enumerate(X) if x is not None]
+    X = X[idx]
+    X_handcrafted = X_handcrafted[idx]
+    Y = Y.iloc[idx]
+
 
     agg_df = pd.read_csv(path + 'scp_statements.csv', index_col=0)
 
@@ -153,7 +165,6 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
     mask_train = Y['strat_fold'] != test_fold
     mask_test = Y['strat_fold'] == test_fold
 
-
     X_train = X[mask_train.to_numpy()]
     X_test = X[mask_test.to_numpy()]
 
@@ -173,13 +184,10 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
 
     if (not os.path.exists('data/processed/train_dataset.pt')):
         torch.save(train_dataset, 'data/processed/train_dataset.pt')
-    
     if (not os.path.exists('data/processed/test_dataset.pt')):
         torch.save(test_dataset, 'data/processed/test_dataset.pt')
     if (not os.path.exists('data/processed/diseases_names.pt')):
         torch.save(mlb.classes_, 'data/processed/diseases_names.pt')
-    if (not os.path.exists('data/processed/diseases_names.pt')):
-        torch.save(features_num, 'data/processed/features_num.pt')
     if (not os.path.exists('data/processed/features_num.pt')):
         with open("data/processed/features_num.json", "w") as f:
             json.dump({"features_num": features_num}, f, indent=4)

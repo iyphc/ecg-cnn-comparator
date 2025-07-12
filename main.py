@@ -39,6 +39,7 @@ def main():
             out_classes=out_classes,
             handcrafted_classes=features_num
         ))
+
         if args.train or not os.path.exists("handcrafted_CNN_ECG_detection.pth"):
             models[1] = train_model(
                 models[1],
@@ -55,6 +56,7 @@ def main():
         else:
             load_model(models[1], "handcrafted_CNN_ECG_detection.pth")
             print("HANDCRAFTED MODEL IS LOADED")
+
         if args.train or not os.path.exists("CNN_ECG_detection.pth"):
             models[0] = train_model(
                 models[0],
@@ -69,7 +71,7 @@ def main():
                 learning_rate=args.lr
             )
         else:
-            load_model(models[0], "handcrafted_CNN_ECG_detection.pth")
+            load_model(models[0], "CNN_ECG_detection.pth")  # <--- Fixed line
             print("BASE MODEL IS LOADED")
         
         all_preds, all_true = evaluate_model(models[0], test_loader, is_handcrafted=False)

@@ -102,9 +102,10 @@ def handcrafted_extraction(df: pd.DataFrame):
     df['height'] = df['height'].fillna(df['height'].median())
     df['weight'] = df['weight'].fillna(df['weight'].median())
     
-    features = df[['age', 'sex', 'height', 'weight']].to_numpy(dtype=np.float32)
+    binary_features = df[['sex']].to_numpy(dtype=np.float32)
+    non_binary_features = df[['age', 'height', 'weight']].to_numpy(dtype=np.float32)
 
-    return features, features.shape[1]
+    return binary_features, non_binary_features
 
 def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
             sampling_rate=100, reduced_dataset=True):
@@ -120,8 +121,13 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
     Y['scp_codes'] = Y['scp_codes'].apply(ast.literal_eval)
     
     X = load_raw_data(Y, sampling_rate, path)
-    X_handcrafted, features_num = handcrafted_extraction(Y)
+    X_binary, X_non_binary = handcrafted_extraction(Y)
 
+    X_non_binary = normalize(X_non_binary)
+    X = normalize(X)
+    X_handcrafted = np.hstack([X_binary, X_non_binary])
+    
+    features_num = X_handcrafted.shape[1]
 
     # Очистка данных от None значений
     idx = [i for i, x in enumerate(X) if x is not None]
@@ -129,8 +135,6 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
     X_handcrafted = X_handcrafted[idx]
     Y = Y.iloc[idx]
 
-    X = normalize(X)
-    X_handcrafted = normalize(X_handcrafted)
 
     agg_df = pd.read_csv(path + 'scp_statements.csv', index_col=0)
 

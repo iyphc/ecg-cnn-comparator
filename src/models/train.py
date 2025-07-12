@@ -12,45 +12,62 @@ from src.data.constants import REDUCED_DISEASES_LIST
 from src.models.base_model import BaseModel
 from src.models.cnn_handcrafted import HandcraftedModel
 
-def validate(model, val_loader, device, loss_fn, is_handcrafted=False):
+import numpy as np
+from sklearn.metrics import f1_score
+from tqdm import tqdm
+import torch
+
+def validate(model, val_loader, device, is_handcrafted):
     model.eval()
     all_probs = []
     all_true = []
 
-    Q_val = 0
-    count_val = 0
     with torch.no_grad():
-        for inputs, X_handcrafted, labels in tqdm.tqdm(val_loader, desc=f'valudate'):
+        for inputs, X_handcrafted, labels in tqdm(val_loader, desc='validate'):
             inputs = inputs.to(device)
             X_handcrafted = X_handcrafted.to(device)
             labels = labels.to(device)
-
             if is_handcrafted:
                 outputs = model(inputs, X_handcrafted)
             else:
                 outputs = model(inputs)
-            loss = loss_fn(outputs, labels)
-            Q_val += loss.item()
-            count_val += 1
             probs = torch.sigmoid(outputs).cpu().numpy()
             all_probs.extend(probs)
             all_true.extend(labels.cpu().numpy())
+    all_probs = np.vstack(all_probs)
+    all_true = np.array(all_true)
 
-    Q_val /= count_val    
-    print(f"Val: {Q_val:.4}")
+    best_thresholds = []
+    best_f1_scores = []
 
-    best_f1 = 0
-    best_threshold = 0.5
     thresholds = np.linspace(0, 1, 50)
+    n_classes = all_probs.shape[1]
 
-    for t in thresholds:
-        preds = (np.array(all_probs) > t).astype(int)
-        f1 = f1_score(all_true, preds, average='macro')
-        if f1 > best_f1:
-            best_f1 = f1
-            best_threshold = t
-    
-    return best_threshold, best_f1
+    for class_idx in range(n_classes):
+        y_true_binary = all_true[:, class_idx]
+
+        unique_labels = np.unique(y_true_binary)
+        if len(unique_labels) < 2:
+            print(f"Класс {class_idx} содержит только один уникальный класс: {unique_labels}")
+            best_thresholds.append(0.5)
+            best_f1_scores.append(0.0)
+            continue
+
+        best_f1 = 0.0
+        best_threshold = 0.5
+
+        for t in thresholds:
+            y_pred_binary = (all_probs[:, class_idx] > t).astype(int)
+            f1 = f1_score(y_true_binary, y_pred_binary, average="binary", zero_division=0)
+            if f1 > best_f1:
+                best_f1 = f1
+                best_threshold = t
+
+        best_thresholds.append(best_threshold)
+        best_f1_scores.append(best_f1)
+        mean_f1 = np.mean(best_f1_scores)
+
+    return best_thresholds, mean_f1
 
 def train_model(model=None, train_load=None, test_load=None, val_load=None, class_names=None, features_num=None, epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, device=None):
     if device is None:
@@ -76,7 +93,7 @@ def train_model(model=None, train_load=None, test_load=None, val_load=None, clas
         running_loss = 0
         total = 0
 
-        for X, X_handcrafted, y in tqdm.tqdm(train_load, desc=f'Epoch {i+1}/{epochs}'):
+        for X, X_handcrafted, y in tqdm(train_load, desc=f'Epoch {i+1}/{epochs}'):
             X, y = X.to(device), y.to(device)
             pred = None
             if not is_handcrafted:
@@ -94,7 +111,7 @@ def train_model(model=None, train_load=None, test_load=None, val_load=None, clas
             total += y.size(0)
 
         epoch_loss = running_loss / total
-        tmp_thresh, tmp_best_f1 = validate(model, val_load, device, loss_fn, is_handcrafted)
+        tmp_thresh, tmp_best_f1 = validate(model, val_load, device, is_handcrafted)
         if tmp_best_f1 > best_f1:
             model.threshold = tmp_thresh
         print(f"Epoch {i+1}/{epochs} - Loss: {epoch_loss:.4f}")

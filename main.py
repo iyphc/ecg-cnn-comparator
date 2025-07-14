@@ -25,7 +25,7 @@ def main(cfg: DictConfig) -> None:
         base_model = hydra.utils.instantiate(base_cfg.model)
         handcrafted_model = hydra.utils.instantiate(handcrafted_cfg.model, base_model=base_model)
 
-        save_dir = "models"
+        save_dir = "models/checkpoints"
         os.makedirs(save_dir, exist_ok=True)
         
         if cfg.train or not os.path.exists(f"{save_dir}/handcrafted_CNN_ECG_detection.pth"):

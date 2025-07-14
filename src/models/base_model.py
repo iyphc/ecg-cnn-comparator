@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.models.utils import get_device
+from src.utils.utils import get_device
 
 class BaseModel(nn.Module):
     def __init__(self, in_channels: int, out_classes: int):

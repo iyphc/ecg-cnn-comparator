@@ -1,13 +1,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.models.utils import get_device
+from src.utils.utils import get_device
 from src.data.loader import get_dataloaders
-from src.data.constants import REDUCED_DISEASES_LIST 
+from src.utils.constants import REDUCED_DISEASES_LIST 
 from src.models.base_model import BaseModel
 from src.models.cnn_handcrafted import HandcraftedModel
 from src.data.preprocess import ECG_Dataset
-from src.models.evaluation import evaluate_model
+from src.training.evaluator import evaluate_model
 import tqdm
 from torch.utils.data import DataLoader
 import json

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 from sklearn.preprocessing import MultiLabelBinarizer
-from src.data.constants import REDUCED_DISEASES_LIST
+from src.utils.constants import REDUCED_DISEASES_LIST
 
 class ECG_Dataset(Dataset):
     def __init__(

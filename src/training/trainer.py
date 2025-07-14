@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,7 +13,9 @@ import tqdm
 from torch.utils.data import DataLoader
 import json
 
-def train_model(model, train_set=None, test_set=None, val_set=None, class_names=None, epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, device=None):
+def train_model(model, train_set=None, test_set=None, val_set=None, class_names=None,
+                epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, 
+                save_path="models/checkpoints", save_name="no_name_model", device=None):
     if device is None:
         device = get_device()
     if train_set is None or test_set is None or val_set is None or class_names is None:
@@ -70,11 +73,13 @@ def train_model(model, train_set=None, test_set=None, val_set=None, class_names=
         epoch_loss = running_loss / total
         print(f"Epoch {i+1}/{epochs} - Loss: {epoch_loss:.4f}, Valid: {Q_val:.4f}")
 
+    real_save_path = os.path.join(save_path, save_name)
     if not is_handcrafted:
-        torch.save(model.state_dict(), 'CNN_ECG_detection.pth')
+        real_save_path = os.path.join(save_path, save_name)
+        torch.save(model.state_dict(), real_save_path+".pth")
     else:
-        torch.save(model.state_dict(), 'handcrafted_CNN_ECG_detection.pth')
-    print("Training complete! Model saved")
+        real_save_path = os.path.join(save_path, "handcrafted_"+save_name)
+        torch.save(model.state_dict(), real_save_path+".pth")
     return model
 
 if __name__ == '__main__':

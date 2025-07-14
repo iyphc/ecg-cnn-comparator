@@ -1,173 +1,105 @@
+import hydra
 import os
-import argparse
-from numpy import False_
+from omegaconf import DictConfig, OmegaConf
 import torch
-from src.models.utils import get_device
-from src.models.train import train_model
-from src.models.evaluation import evaluate_model
 from src.data.loader import get_dataloaders
-from src.models.cnn_handcrafted import HandcraftedModel
-from src.models.base_model import BaseModel
-from src.models.evaluation import compare_models
-from src.models.evaluation import basic_scores
+from src.training.evaluator import compare_models, basic_scores, evaluate_model
+from src.training.trainer import train_model
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Train/Test/Compare ECG Models with optional features")
+@hydra.main(version_base="1.2", config_path="configs", config_name="config")
+def main(cfg: DictConfig) -> None:
+    print("Используемая конфигурация:")
+    print(OmegaConf.to_yaml(cfg))
 
-    parser.add_argument("--epochs", type=int, default=10, help="Number of epochs")
-    parser.add_argument("--train", action="store_true", help="Train model")
-    parser.add_argument("--evaluate", action="store_true", help="Evaluate model")
-    parser.add_argument("--compare", action="store_true", help="Compare models")
-    parser.add_argument("--batch-size", type=int, default=256, help="Batch size")
-    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
-    parser.add_argument("--handcrafted", action="store_true", help="Use handcrafted features")
-    parser.add_argument("--statistics", action="store_true", help="Print statistics")
-    return parser.parse_args()
-
-def main():
-    args = parse_args()
-    train_loader, test_loader, valid_loader, class_names, features_num = get_dataloaders(batch_size=args.batch_size)
+    train_loader, test_loader, valid_loader, class_names, features_num = get_dataloaders(
+        batch_size=cfg.data.batch_size,
+        valid_part=cfg.data.val_part,
+        num_workers=cfg.data.num_workers
+    )
     out_classes = len(class_names)
-    if args.compare:
-        models = list()
-        models.append(BaseModel(
-            in_channels=12,
-            out_classes=out_classes
-        ))
-        models.append(HandcraftedModel(
-            in_channels=12,
-            out_classes=out_classes,
-            handcrafted_classes=features_num
-        ))
-        if args.train or not os.path.exists("handcrafted_CNN_ECG_detection.pth"):
-            models[1] = train_model(
-                models[1],
-                train_loader,
-                test_loader,
-                valid_loader,
-                class_names,
-                is_handcrafted=True,
-                epochs=args.epochs,
-                batch_size=args.batch_size,
-                learning_rate=args.lr
+
+    if cfg.mode == "compare":
+        base_cfg = OmegaConf.load("configs/model/base_model.yaml")
+        handcrafted_cfg = OmegaConf.load("configs/model/handcrafted.yaml")
+
+        base_model = hydra.utils.instantiate(base_cfg.model)
+        handcrafted_model = hydra.utils.instantiate(handcrafted_cfg.model, base_model=base_model)
+
+        save_dir = "models"
+        os.makedirs(save_dir, exist_ok=True)
+        
+        if cfg.train or not os.path.exists(f"{save_dir}/handcrafted_CNN_ECG_detection.pth"):
+            print("Обучение handcrafted модели...")
+            handcrafted_model = train_model(
+                handcrafted_model, train_loader, test_loader, valid_loader, class_names,
+                is_handcrafted=True, epochs=cfg.training.epochs, batch_size=cfg.data.batch_size, learning_rate=cfg.training.lr
             )
+            torch.save(handcrafted_model.state_dict(), f"{save_dir}/handcrafted_CNN_ECG_detection.pth")
         else:
-            state_dict = torch.load("handcrafted_CNN_ECG_detection.pth", weights_only=False)
-            models[1].load_state_dict(state_dict)
+            handcrafted_model.load_state_dict(torch.load(f"{save_dir}/handcrafted_CNN_ECG_detection.pth"))
             print("HANDCRAFTED MODEL IS LOADED")
-        if args.train or not os.path.exists("CNN_ECG_detection.pth"):
-            models[0] = train_model(
-                models[0],
-                train_loader,
-                test_loader,
-                valid_loader,
-                class_names,
-                is_handcrafted=False,
-                epochs=args.epochs,
-                batch_size=args.batch_size,
-                learning_rate=args.lr
+
+        if cfg.train or not os.path.exists(f"{save_dir}/CNN_ECG_detection.pth"):
+            print("Обучение базовой модели...")
+            base_model = train_model(
+                base_model, train_loader, test_loader, valid_loader, class_names,
+                is_handcrafted=False, epochs=cfg.training.epochs, batch_size=cfg.data.batch_size, learning_rate=cfg.training.lr
             )
+            torch.save(base_model.state_dict(), f"{save_dir}/CNN_ECG_detection.pth")
         else:
-            state_dict = torch.load("CNN_ECG_detection.pth", weights_only=False)
-            models[0].load_state_dict(state_dict)
+            base_model.load_state_dict(torch.load(f"{save_dir}/CNN_ECG_detection.pth"))
             print("BASE MODEL IS LOADED")
-        
-        all_preds, all_true = evaluate_model(models[0], test_loader, is_handcrafted=False)
-        scores = basic_scores(all_true, all_preds)
-        print("\n\n-----------------")
-        print("BASE MODEL SCORES")
-        print("-----------------\n")
-        for name in scores:
-            print(f"{name}: {scores[name]}")
 
-        all_preds, all_true = evaluate_model(models[1], test_loader, is_handcrafted=True)
-        scores = basic_scores(all_true, all_preds)
-        print("\n\n------------------------")
-        print("HANDCRAFTED MODEL SCORES")
-        print("------------------------\n")
-        for name in scores:
-            print(f"{name}: {scores[name]}")
+        for model, name in [(base_model, "BASE"), (handcrafted_model, "HANDCRAFTED")]:
+            all_preds, all_true = evaluate_model(model, test_loader, is_handcrafted=(name == "HANDCRAFTED"))
+            scores = basic_scores(all_true, all_preds)
+            print(f"\n\n-----------------{name} SCORES-----------------\n")
+            for score_name, score_value in scores.items():
+                print(f"{score_name}: {score_value}")
 
-        intervals = compare_models(models[0], models[1], test_loader)
-        print("\n\n--------------------")
-        print("COMPARISON INTERVALS")
-        print("--------------------\n")
-        for name in intervals:
-            print(f"{name}: ({intervals[name][0]:.4f}, {intervals[name][1]:.4f})")
-    elif args.train:
-        model_tmp = None
+        intervals = compare_models(base_model, handcrafted_model, test_loader)
+        print("\n\n--------------------COMPARISON INTERVALS--------------------\n")
+        for name, interval in intervals.items():
+            print(f"{name}: ({interval[0]:.4f}, {interval[1]:.4f})")
 
-        if args.handcrafted:
-            model_tmp = HandcraftedModel(
-                in_channels=12,
-                out_classes=out_classes,
-                handcrafted_classes=features_num
-            )
-        else:
-            model_tmp = BaseModel(
-                in_channels=12,
-                out_classes=out_classes
-            )
-
-        train_model(
-            model_tmp,
-            train_loader,
-            test_loader,
-            valid_loader,
-            class_names,
-            is_handcrafted=args.handcrafted,
-            epochs=args.epochs,
-            batch_size=args.batch_size,
-            learning_rate=args.lr
+    elif cfg.mode == "train":
+        model = hydra.utils.instantiate(cfg.model)
+        save_path = os.path.join(cfg.training.save_path, cfg.training.save_name)
+        model = train_model(
+            model, train_loader, test_loader, valid_loader, class_names,
+            is_handcrafted=cfg.handcrafted, epochs=cfg.training.epochs,
+            batch_size=cfg.data.batch_size, learning_rate=cfg.training.lr
         )
-    elif args.statistics and not args.compare:
-        model_tmp = None
-        if args.handcrafted:
-            model_tmp = HandcraftedModel(
-                in_channels=12,
-                out_classes=out_classes,
-                handcrafted_classes=features_num
-            )
+        os.makedirs(os.path.dirname(cfg.training.save_path), exist_ok=True)
+        torch.save(model.state_dict(), save_path)
+        print(f"Модель сохранена по пути: {cfg.training.save_path}")
+
+    elif cfg.mode == "statistics":
+        model = hydra.utils.instantiate(cfg.model)
+        save_path = os.path.join(cfg.training.save_path, cfg.training.save_name)
+        if cfg.handcrafted:
+            save_path = "handcrafted_" + save_path
+
+        if os.path.exists(save_path):
+            model.load_state_dict(torch.load(save_path))
+            print(f"MODEL IS LOADED FROM {save_path}")
         else:
-            model_tmp = BaseModel(
-                in_channels=12,
-                out_classes=out_classes
-            )
+            print(f"Model not found at {save_path}, training...")
+            train_model(model, train_loader, test_loader, valid_loader, class_names,
+                        is_handcrafted=cfg.handcrafted, epochs=cfg.training.epochs,
+                        batch_size=cfg.data.batch_size, learning_rate=cfg.training.lr)
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            torch.save(model.state_dict(), save_path)
+            print(f"Model saved to {save_path}")
 
-        have_to_train = True
-
-        if (not args.handcrafted) and os.path.exists("CNN_ECG_detection.pth"):
-            state_dict = torch.load("CNN_ECG_detection.pth", weights_only=False)
-            model_tmp.load_state_dict(state_dict)
-            have_to_train = False
-            print("BASE MODEL IS LOADED\n")
-        elif args.handcrafted and os.path.exists("handcrafted_CNN_ECG_detection.pth"):
-            state_dict = torch.load("handcrafted_CNN_ECG_detection.pth", weights_only=False)
-            model_tmp.load_state_dict(state_dict)
-            have_to_train = False
-            print("HANDCRAFTED MODEL IS LOADED\n")
-        
-        if have_to_train:
-            train_model(
-                model_tmp,
-                train_loader,
-                test_loader,
-                valid_loader,
-                class_names,
-                is_handcrafted=args.handcrafted,
-                epochs=args.epochs,
-                batch_size=args.batch_size,
-                learning_rate=args.lr
-            )
-        all_preds, all_true = evaluate_model(model_tmp, test_loader, is_handcrafted=args.handcrafted)
+        all_preds, all_true = evaluate_model(model, test_loader, is_handcrafted=cfg.handcrafted)
         scores = basic_scores(all_true, all_preds)
+        print("\n\n--------------------STATISTICS--------------------\n")
+        for name, score in scores.items():
+            print(f"{name}: {score}")
 
-        for name in scores:
-            print(f"{name}: {scores[name]}")
     else:
-        print("\n------\nWARNING\n------\n")
-        print("PLEASE ADD FLAGS\n")
-
+        print("Неверный режим. Доступные режимы: train, compare, statistics")
 
 if __name__ == "__main__":
     main()

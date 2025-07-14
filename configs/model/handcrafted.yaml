@@ -1,0 +1,4 @@
+model:
+  __target__: src.model.cnn_handcrafted.HandcraftedModel
+  base_model: ${model}
+  handcrafted_classes: 4

@@ -22,7 +22,8 @@ def train_model(model, train_set=None, test_set=None, val_set=None, class_names=
         model = BaseModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST)).to(device)
     elif not model is None:
         handcrafted_size = next(iter(train_set))[1].shape[1]
-        model = HandcraftedModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST), handcrafted_classes=handcrafted_size).to(device)
+        base_model = BaseModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST)).to(device)
+        model = HandcraftedModel(base_model=base_model, handcrafted_classes=handcrafted_size).to(device)
 
     loss_fn = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -78,4 +79,4 @@ def train_model(model, train_set=None, test_set=None, val_set=None, class_names=
 
 if __name__ == '__main__':
     train, test, valid, names, features_name = get_dataloaders()
-    train_model(train, test, valid, names, is_handcrafted=True, epochs=20, batch_size=128)
+    model = train_model(train, test, valid, names, is_handcrafted=True, epochs=20, batch_size=128)

@@ -4,20 +4,18 @@ import torch.nn.functional as F
 from src.utils.utils import get_device
 from src.models.base_model import BaseModel
 
-class HandcraftedModel(BaseModel):
-    def __init__(self, in_channels: int, out_classes: int, handcrafted_classes: int):
-        super().__init__(in_channels=in_channels, out_classes=out_classes)
-        self.device = get_device()
+class HandcraftedModel(nn.Module):
+    def __init__(self, base_model: nn.Module, handcrafted_classes: int):
+        super().__init__()
+        self.base_model = base_model
         self.hc_spread = nn.Linear(handcrafted_classes, 32)
-        self.hc_fc = nn.Linear(out_classes + 32, 128)
-        self.fc = nn.Linear(128, out_classes)
+        self.out_classes = base_model.out_classes
+        self.hc_fc = nn.Linear(self.out_classes + 32, 128)
+        self.fc = nn.Linear(128, self.out_classes)
+        self.device = get_device()
 
     def forward(self, x, handcrafted=None):
-        """
-        x: Tensor of shape (batch_size, in_channels, seq_len) or already processed to (batch_size, out_classes)
-        handcrafted: Tensor of shape (batch_size, handcrafted_classes)
-        """
-        x = super().forward(x)
+        x = self.base_model.forward(x)
         if handcrafted is None:
             raise ValueError("Handcrafted features are required for this model")
 

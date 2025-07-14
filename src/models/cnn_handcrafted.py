@@ -5,17 +5,17 @@ from src.utils.utils import get_device
 from src.models.base_model import BaseModel
 
 class HandcraftedModel(nn.Module):
-    def __init__(self, base_model: nn.Module, handcrafted_classes: int):
+    def __init__(self, base_model, handcrafted_classes: int):
         super().__init__()
         self.base_model = base_model
         self.hc_spread = nn.Linear(handcrafted_classes, 32)
         self.out_classes = base_model.out_classes
-        self.hc_fc = nn.Linear(self.out_classes + 32, 128)
-        self.fc = nn.Linear(128, self.out_classes)
+        self.hc_fc = nn.Linear(base_model.features_num + 32, 128)
+        self.fc = nn.Linear(128, base_model.out_classes)
         self.device = get_device()
 
     def forward(self, x, handcrafted=None):
-        x = self.base_model.forward(x)
+        x = self.base_model.extract_features(x)
         if handcrafted is None:
             raise ValueError("Handcrafted features are required for this model")
 

@@ -6,6 +6,8 @@ from src.utils.utils import get_device
 class BaseModel(nn.Module):
     def __init__(self, in_channels: int, out_classes: int):
         super().__init__()
+        self.in_channels = in_channels
+        self.out_classes = out_classes
         self.device = get_device()
         self.conv1 = nn.Conv1d(in_channels, 16, kernel_size=12, stride=4)
         self.conv2 = nn.Conv1d(16, 64, kernel_size=12, stride=4)

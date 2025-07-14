@@ -105,7 +105,8 @@ if __name__ == "__main__":
     is_handcrafted = True
     _, test, _, names, features_num = get_dataloaders()
     if is_handcrafted:
-        model = HandcraftedModel(in_channels=12, out_classes=len(names), handcrafted_classes=features_num)
+        base_model = BaseModel(in_channels=12, out_classes=len(names))
+        model = HandcraftedModel(base_model=base_model, handcrafted_classes=features_num)
         state_dict = torch.load("handcrafted_CNN_ECG_detection.pth", weights_only=False)
         model.load_state_dict(state_dict)
     else:

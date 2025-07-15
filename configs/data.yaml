@@ -1,14 +1,14 @@
-# conf/data.yaml
 data:
-  # Общие параметры
   batch_size: 256
-  epochs: 15
   num_workers: 2
 
-  # Путь к данным
   data_dir: "data/processed"
   raw_dir: "data/raw/physionet.org/files/ptb-xl/1.0.1/"
 
-  # Разделение на train/valid
   val_part: 0.2
 
+  features: ['sex', 'age', 'height', 'weight', 'bmi', 'ap_hi', 'ap_lo', 'cholesterol', 'gluc', 'smoke', 'alco', 'active']
+
+  sampling_rate: 100
+
+  reduced_dataset: ["SR", "SARRH", "SBRAD", "STACH", "AFIB"]

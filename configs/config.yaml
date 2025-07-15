@@ -2,8 +2,7 @@ defaults:
   - _self_
   - data
   - training
-  - model: base_model
+  - base_model: base_model
+  - handcrafted_model: null
 
 mode: "train"  # Возможные значения: train, evaluate, compare, statistics
-train: false
-handcrafted: false

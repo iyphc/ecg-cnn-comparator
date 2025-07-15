@@ -15,11 +15,19 @@ import json
 
 def train_model(model, train_set=None, test_set=None, val_set=None, class_names=None,
                 epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, 
-                save_path="models/checkpoints", save_name="no_name_model", device=None):
+                save_path="models/checkpoints", save_name="no_name_model.pth", device=None,
+                num_workers=2, sampling_rate=100, reduced_dataset=None):
     if device is None:
         device = get_device()
     if train_set is None or test_set is None or val_set is None or class_names is None:
-        train_set, test_set, val_set, class_names, features_num = get_dataloaders()
+        train_set, test_set, val_set, class_names, features_num = get_dataloaders(
+        batch_size=batch_size,
+        valid_part=val_set,
+        num_workers=num_workers,
+        raw_path=save_path,
+        sampling_rate=sampling_rate,
+        reduced_dataset=reduced_dataset
+    )
     size = len(train_set)
     if not model is None and not is_handcrafted:
         model = BaseModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST)).to(device)
@@ -74,12 +82,7 @@ def train_model(model, train_set=None, test_set=None, val_set=None, class_names=
         print(f"Epoch {i+1}/{epochs} - Loss: {epoch_loss:.4f}, Valid: {Q_val:.4f}")
 
     real_save_path = os.path.join(save_path, save_name)
-    if not is_handcrafted:
-        real_save_path = os.path.join(save_path, save_name)
-        torch.save(model.state_dict(), real_save_path+".pth")
-    else:
-        real_save_path = os.path.join(save_path, "handcrafted_"+save_name)
-        torch.save(model.state_dict(), real_save_path+".pth")
+    torch.save(model.state_dict(), real_save_path)
     return model
 
 if __name__ == '__main__':

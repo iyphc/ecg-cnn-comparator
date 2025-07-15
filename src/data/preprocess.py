@@ -92,21 +92,23 @@ def normalize(signals: np.ndarray) -> np.ndarray:
     X = np.where(std != 0, (signals - mean) / std, 0)
     return X
 
-def handcrafted_extraction(df: pd.DataFrame):
+def handcrafted_extraction(df: pd.DataFrame, features):
     df = df.copy()
     
-    sex_mapping = {'male': 0, 'female': 1}
-    df['sex'] = df['sex'].map(sex_mapping).fillna(-1)
-    df['age'] = df['age'].fillna(df['age'].median())
-    df['height'] = df['height'].fillna(df['height'].median())
-    df['weight'] = df['weight'].fillna(df['weight'].median())
+    # sex_mapping = {'male': 0, 'female': 1}
+    # df['sex'] = df['sex'].map(sex_mapping).fillna(-1)
+    # df['age'] = df['age'].fillna(df['age'].median())
+    # df['height'] = df['height'].fillna(df['height'].median())
+    # df['weight'] = df['weight'].fillna(df['weight'].median())
     
-    features = df[['age', 'sex', 'height', 'weight']].to_numpy(dtype=np.float32)
+    # features = df[['age', 'sex', 'height', 'weight']].to_numpy(dtype=np.float32)
+
+    features = df[features].to_numpy(dtype=np.float32)
 
     return features, features.shape[1]
 
 def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
-            sampling_rate=100, reduced_dataset=True):
+            sampling_rate=100, reduced_dataset=None):
     
     print("STARTED PREPAIRING DATASET\n")
     if not os.path.exists(path + 'ptbxl_database.csv'):
@@ -126,7 +128,7 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
 
     agg_df = pd.read_csv(path + 'scp_statements.csv', index_col=0)
 
-    def aggregate_diagnostic(scp_dict, is_reduced):
+    def aggregate_diagnostic(scp_dict, reduced_dataset):
         if not isinstance(scp_dict, dict):
             return []
         
@@ -135,8 +137,8 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
             if code not in agg_df.index:
                 print(code)
                 continue
-            if is_reduced:
-                if code in REDUCED_DISEASES_LIST:
+            if reduced_dataset is not None:
+                if code in reduced_dataset:
                     classes.add(code)
             else:
                 classes.add(code)
@@ -188,7 +190,7 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
     return train_dataset, test_dataset, mlb.classes_, features_num
 
 def load_ECG_dataset(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
-            sampling_rate=100, reduced_dataset=True):
+            sampling_rate=100, reduced_dataset=None):
     train_dataset = None
     test_dataset = None
     diseases_names = None

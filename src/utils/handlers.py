@@ -85,7 +85,7 @@ def handler_train(cfg):
         num_workers=cfg.data.num_workers,
         raw_path=cfg.data.raw_dir,
         sampling_rate=cfg.data.sampling_rate,
-        reduced_dataset=cfg.data.reduced.reduced_dataset
+        reduced_dataset=cfg.data.reduced_dataset
     )
     train_model(
         handcrafted if is_handcrafted else model,
@@ -120,7 +120,7 @@ def handler_statistics(cfg):
         num_workers=cfg.data.num_workers,
         raw_path=cfg.data.raw_dir,
         sampling_rate=cfg.data.sampling_rate,
-        reduced_dataset=cfg.data.reduced.reduced_dataset
+        reduced_dataset=cfg.data.reduced_dataset
     )
 
     all_preds, all_true = evaluate_model(model, test_loader, is_handcrafted=is_handcrafted)

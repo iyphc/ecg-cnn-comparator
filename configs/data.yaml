@@ -7,7 +7,7 @@ data:
 
   val_part: 0.2
 
-  features: ['sex', 'age', 'height', 'weight', 'bmi', 'ap_hi', 'ap_lo', 'cholesterol', 'gluc', 'smoke', 'alco', 'active']
+  features: ['sex', 'age', 'height', 'weight']
 
   sampling_rate: 100
 

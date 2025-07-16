@@ -104,7 +104,7 @@ def handler_train(cfg):
     )
     print(f"Модель сохранена по пути: {save_path}")
 
-def handler_statistics(cfg):
+def handler_evaluate(cfg):
     device = get_device()
     
     train_loader, test_loader, valid_loader, class_names, features_list = get_dataloaders(

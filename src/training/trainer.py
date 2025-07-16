@@ -96,7 +96,22 @@ def train_model(model, train_load=None, test_load=None, val_load=None, class_nam
     
     model = model.to(device)
 
-    loss_fn = nn.BCEWithLogitsLoss()
+    #pos_weight calculation
+    pos_weight = None
+    all_labels = []
+    for _, _, label in train_load:
+        all_labels.append(label)
+    
+    tens_labels = torch.cat(all_labels, dim=0)
+    pos_cnt = tens_labels.sum(dim=0)
+
+    neg_cnt = tens_labels.shape[0] - pos_cnt
+
+    pos_weight = torch.where(pos_cnt > 0, neg_cnt / pos_cnt, torch.ones_like(pos_cnt))
+    pos_weight = pos_weight.to(device)
+
+    loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     
     best_f1 = 0

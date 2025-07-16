@@ -9,7 +9,18 @@ from src.utils.utils import get_device
 
 def handler_compare(cfg):
     device = get_device()
-    base_model = hydra.utils.instantiate(cfg.base_model)
+    
+    train_loader, test_loader, valid_loader, class_names, features_list = get_dataloaders(
+        batch_size=cfg.data.batch_size,
+        valid_part=cfg.data.val_part,
+        num_workers=cfg.data.num_workers,
+        raw_path=cfg.data.raw_dir,
+        sampling_rate=cfg.data.sampling_rate,
+        reduced_dataset=cfg.data.reduced_dataset,
+        features=cfg.data.features
+    )
+    
+    base_model = hydra.utils.instantiate(cfg.base_model, out_classes=len(class_names))
     handcrafted_model = None
     is_handcrafted = False
     if hasattr(cfg, "handcrafted_model"):
@@ -21,16 +32,7 @@ def handler_compare(cfg):
     save_handcrafted_path = os.path.join(cfg.training.save_path, save_handcrafted_name)
     os.makedirs(cfg.training.save_path, exist_ok=True)
 
-    train_loader, test_loader, valid_loader, class_names, features_num = get_dataloaders(
-        batch_size=cfg.data.batch_size,
-        valid_part=cfg.data.val_part,
-        num_workers=cfg.data.num_workers,
-        raw_path=cfg.data.raw_dir,
-        sampling_rate=cfg.data.sampling_rate,
-        reduced_dataset=cfg.data.reduced_dataset
-    )
-
-    if is_handcrafted:
+    if is_handcrafted and handcrafted_model is not None:
         if os.path.exists(save_handcrafted_path):
             handcrafted_model.load_state_dict(torch.load(save_handcrafted_path, map_location=device))
             print("HANDCRAFTED MODEL IS LOADED")
@@ -63,7 +65,18 @@ def handler_compare(cfg):
 
 def handler_train(cfg):
     device = get_device()
-    model = hydra.utils.instantiate(cfg.base_model)
+    
+    train_loader, test_loader, valid_loader, class_names, features_list = get_dataloaders(
+        batch_size=cfg.data.batch_size,
+        valid_part=cfg.data.val_part,
+        num_workers=cfg.data.num_workers,
+        raw_path=cfg.data.raw_dir,
+        sampling_rate=cfg.data.sampling_rate,
+        reduced_dataset=cfg.data.reduced_dataset,
+        features=cfg.data.features
+    )
+    
+    model = hydra.utils.instantiate(cfg.base_model, out_classes=len(class_names))
     is_handcrafted = False
     handcrafted = None
     if hasattr(cfg, "handcrafted_model"):
@@ -78,15 +91,6 @@ def handler_train(cfg):
         save_path = os.path.join(cfg.training.save_path, save_name)
 
     os.makedirs(cfg.training.save_path, exist_ok=True)
-
-    train_loader, test_loader, valid_loader, class_names, features_num = get_dataloaders(
-        batch_size=cfg.data.batch_size,
-        valid_part=cfg.data.val_part,
-        num_workers=cfg.data.num_workers,
-        raw_path=cfg.data.raw_dir,
-        sampling_rate=cfg.data.sampling_rate,
-        reduced_dataset=cfg.data.reduced_dataset
-    )
     train_model(
         handcrafted if is_handcrafted else model,
         train_loader, test_loader, valid_loader, class_names,
@@ -95,13 +99,25 @@ def handler_train(cfg):
         batch_size=cfg.data.batch_size,
         learning_rate=cfg.training.lr,
         save_path=cfg.training.save_path,
-        save_name=save_name
+        save_name=save_name,
+        features=cfg.data.features
     )
     print(f"Модель сохранена по пути: {save_path}")
 
 def handler_statistics(cfg):
     device = get_device()
-    model = hydra.utils.instantiate(cfg.base_model)
+    
+    train_loader, test_loader, valid_loader, class_names, features_list = get_dataloaders(
+        batch_size=cfg.data.batch_size,
+        valid_part=cfg.data.val_part,
+        num_workers=cfg.data.num_workers,
+        raw_path=cfg.data.raw_dir,
+        sampling_rate=cfg.data.sampling_rate,
+        reduced_dataset=cfg.data.reduced_dataset,
+        features=cfg.data.features
+    )
+    
+    model = hydra.utils.instantiate(cfg.base_model, out_classes=len(class_names))
     is_handcrafted = False
     if hasattr(cfg, "handcrafted_model"):
         model = hydra.utils.instantiate(cfg.handcrafted_model, base_model=model)
@@ -113,15 +129,6 @@ def handler_statistics(cfg):
     checkpoint = torch.load(save_path, map_location=device)
     model.load_state_dict(checkpoint)
     print(f"MODEL IS LOADED FROM {save_path}")
-
-    train_loader, test_loader, valid_loader, class_names, features_num = get_dataloaders(
-        batch_size=cfg.data.batch_size,
-        valid_part=cfg.data.val_part,
-        num_workers=cfg.data.num_workers,
-        raw_path=cfg.data.raw_dir,
-        sampling_rate=cfg.data.sampling_rate,
-        reduced_dataset=cfg.data.reduced_dataset
-    )
 
     all_preds, all_true = evaluate_model(model, test_loader, is_handcrafted=is_handcrafted)
     scores = basic_scores(all_true, all_preds)

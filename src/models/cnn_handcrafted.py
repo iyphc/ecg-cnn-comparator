@@ -7,6 +7,9 @@ from src.models.base_model import BaseModel
 class HandcraftedModel(nn.Module):
     def __init__(self, base_model, handcrafted_classes: int):
         super().__init__()
+
+        self.threshold = [0.5] * base_model.out_classes
+
         self.base_model = base_model
         self.hc_spread = nn.Linear(handcrafted_classes, 32)
         self.out_classes = base_model.out_classes

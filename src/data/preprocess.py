@@ -95,21 +95,31 @@ def normalize(signals: np.ndarray) -> np.ndarray:
 
 def handcrafted_extraction(df: pd.DataFrame, features):
     df = df.copy()
+    binary_features = []
+    non_binary_features = []
     
-    # sex_mapping = {'male': 0, 'female': 1}
-    # df['sex'] = df['sex'].map(sex_mapping).fillna(-1)
-    # df['age'] = df['age'].fillna(df['age'].median())
-    # df['height'] = df['height'].fillna(df['height'].median())
-    # df['weight'] = df['weight'].fillna(df['weight'].median())
+    for feature in features:
+        if feature not in df.columns:
+            print(f"Признак '{feature}' не найден в датафрейме")
+            continue
+            
+        feature_values = df[feature].values
+        unique_values = np.unique(feature_values[~np.isnan(feature_values)])
+        
+        if len(unique_values) <= 2 and all(val in [0, 1, -1] for val in unique_values):
+            binary_features.append(feature_values)
+            print(f"Признак '{feature}' определен как бинарный: {unique_values}")
+        else:
+            non_binary_features.append(feature_values)
+            print(f"Признак '{feature}' определен как небинарный: диапазон [{np.min(unique_values):.2f}, {np.max(unique_values):.2f}]")
     
-    # features = df[['age', 'sex', 'height', 'weight']].to_numpy(dtype=np.float32)
-
-    features = df[features].to_numpy(dtype=np.float32)
-
+    binary_features = np.column_stack(binary_features) if binary_features else np.empty((len(df), 0))
+    non_binary_features = np.column_stack(non_binary_features) if non_binary_features else np.empty((len(df), 0))
+    
     return binary_features, non_binary_features
 
 def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
-            sampling_rate=100, reduced_dataset=None):
+            sampling_rate=100, reduced_dataset=None, features=None):
     
     print("STARTED PREPAIRING DATASET\n")
     if not os.path.exists(path + 'ptbxl_database.csv'):
@@ -122,15 +132,14 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
     Y['scp_codes'] = Y['scp_codes'].apply(ast.literal_eval)
     
     X = load_raw_data(Y, sampling_rate, path)
-    X_binary, X_non_binary = handcrafted_extraction(Y)
+    X_binary, X_non_binary = handcrafted_extraction(Y, features)
 
     X_non_binary = normalize(X_non_binary)
     X = normalize(X)
     X_handcrafted = np.hstack([X_binary, X_non_binary])
     
-    features_num = X_handcrafted.shape[1]
+    features_list = features if features else []
 
-    # Очистка данных от None значений
     idx = [i for i, x in enumerate(X) if x is not None]
     X = X[idx]
     X_handcrafted = X_handcrafted[idx]
@@ -189,36 +198,37 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
         torch.save(test_dataset, 'data/processed/test_dataset.pt')
     if (not os.path.exists('data/processed/diseases_names.pt')):
         torch.save(mlb.classes_, 'data/processed/diseases_names.pt')
-    if (not os.path.exists('data/processed/features_num.pt')):
-        with open("data/processed/features_num.json", "w") as f:
-            json.dump({"features_num": features_num}, f, indent=4)
+    if (not os.path.exists('data/processed/features.json')):
+        with open("data/processed/features.json", "w") as f:
+            features_to_save = list(features_list) if features_list else []
+            json.dump({"features": features_to_save}, f, indent=4)
     
     print("Data saved successfully!")
-    return train_dataset, test_dataset, mlb.classes_, features_num
+    return train_dataset, test_dataset, mlb.classes_, features_list
 
 def load_ECG_dataset(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
-            sampling_rate=100, reduced_dataset=None):
+            sampling_rate=100, reduced_dataset=None, features=None):
     train_dataset = None
     test_dataset = None
     diseases_names = None
-    features_num = -1
+    features_list = []
     if (os.path.exists('data/processed/train_dataset.pt')):
         train_dataset = torch.load('data/processed/train_dataset.pt', weights_only=False)
     if (os.path.exists('data/processed/test_dataset.pt')):
         test_dataset = torch.load('data/processed/test_dataset.pt', weights_only=False)
     if (os.path.exists('data/processed/diseases_names.pt')):
         diseases_names = torch.load('data/processed/diseases_names.pt', weights_only=False)
-    if (os.path.exists('data/processed/features_num.json')):
-        with open('data/processed/features_num.json', 'r', encoding='utf-8') as f:
+    if (os.path.exists('data/processed/features.json')):
+        with open('data/processed/features.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
-            features_num = data["features_num"]
+            features_list = data["features"]
         
-    if ((train_dataset is None) or (test_dataset is None) or (diseases_names is None) or features_num == -1):
+    if ((train_dataset is None) or (test_dataset is None) or (diseases_names is None) or not features_list):
         print("THERE IS NO CORRECT DATASET")
-        train_dataset, test_dataset, diseases_names, features_num = handle(path=path, sampling_rate=sampling_rate, reduced_dataset=reduced_dataset)
+        train_dataset, test_dataset, diseases_names, features_list = handle(path=path, sampling_rate=sampling_rate, reduced_dataset=reduced_dataset, features=features)
     
     print("Data loaded")
-    return train_dataset, test_dataset, diseases_names, features_num
+    return train_dataset, test_dataset, diseases_names, features_list
     
 
 if __name__ == "__main__":

@@ -9,6 +9,9 @@ class BaseModel(nn.Module):
         self.in_channels = in_channels
         self.out_classes = out_classes
         self.features_num = 256
+
+        self.threshold = [0.5] * out_classes
+
         self.seq = nn.Sequential(
             nn.Conv1d(in_channels, 16, kernel_size=8, stride=2, padding=3),
             nn.BatchNorm1d(16),
@@ -30,15 +33,17 @@ class BaseModel(nn.Module):
 
             nn.Flatten(),
             nn.Linear(256 * 10, 256),
-            nn.ReLU(),
-            nn.Dropout(0.5)
+            nn.ReLU()
         )
+        
+        # Добавляем финальный слой как отдельный атрибут
+        self.classifier = nn.Linear(256, self.out_classes)
     def extract_features(self, x):
         x = self.seq(x)
         return x
     def forward(self, x):
         x = self.extract_features(x)
-        x = nn.Linear(256, self.out_classes)
+        x = self.classifier(x)
         return x
 
 

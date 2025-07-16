@@ -4,7 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from src.utils.utils import get_device
 from src.data.loader import get_dataloaders
-from src.utils.constants import REDUCED_DISEASES_LIST 
 from src.models.base_model import BaseModel
 from src.models.cnn_handcrafted import HandcraftedModel
 
@@ -39,6 +38,8 @@ def validate(model, val_loader, device, is_handcrafted):
     thresholds = np.linspace(0, 1, 50)
     n_classes = all_probs.shape[1]
 
+    mean_f1 = 0
+
     for class_idx in range(n_classes):
         y_true_binary = all_true[:, class_idx]
 
@@ -65,28 +66,35 @@ def validate(model, val_loader, device, is_handcrafted):
 
     return best_thresholds, mean_f1
 
-def train_model(model, train_set=None, test_set=None, val_set=None, class_names=None,
-                epochs=10, learning_rate=0.001, is_handcrafted=False, batch_size=128, 
+def train_model(model, train_load=None, test_load=None, val_load=None, class_names=None,
+                epochs=10, learning_rate=0.001, val_part=0.2, is_handcrafted=False, batch_size=128, 
                 save_path="models/checkpoints", save_name="no_name_model.pth", device=None,
-                num_workers=2, sampling_rate=100, reduced_dataset=None):
+                num_workers=2, sampling_rate=100, reduced_dataset=None, features=None):
+    
     if device is None:
         device = get_device()
-    if train_set is None or test_set is None or val_set is None or class_names is None:
-        train_set, test_set, val_set, class_names, features_num = get_dataloaders(
+
+    if train_load is None or test_load is None or val_load is None or class_names is None:
+        train_load, test_load, val_load, class_names, features_list = get_dataloaders(
         batch_size=batch_size,
-        valid_part=val_set,
+        valid_part=val_part,
         num_workers=num_workers,
         raw_path=save_path,
         sampling_rate=sampling_rate,
-        reduced_dataset=reduced_dataset
+        reduced_dataset=reduced_dataset,
+        features=features
     )
-    size = len(train_set)
-    if not model is None and not is_handcrafted:
-        model = BaseModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST)).to(device)
-    elif not model is None:
-        handcrafted_size = next(iter(train_set))[1].shape[1]
-        base_model = BaseModel(in_channels=12, out_classes=len(REDUCED_DISEASES_LIST)).to(device)
+        
+    size = len(train_load)
+
+    if is_handcrafted:
+        handcrafted_size = next(iter(train_load))[1].shape[1]
+        base_model = BaseModel(in_channels=12, out_classes=len(class_names)).to(device)
         model = HandcraftedModel(base_model=base_model, handcrafted_classes=handcrafted_size).to(device)
+    elif not is_handcrafted:
+        model = BaseModel(in_channels=12, out_classes=len(class_names)).to(device)
+    
+    model = model.to(device)
 
     loss_fn = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -100,12 +108,13 @@ def train_model(model, train_set=None, test_set=None, val_set=None, class_names=
 
         for X, X_handcrafted, y in tqdm(train_load, desc=f'Epoch {i+1}/{epochs}'):
             X, y = X.to(device), y.to(device)
-            pred = None
             if not is_handcrafted:
                 pred = model(X)
             else:
                 X_handcrafted = X_handcrafted.to(device)
                 pred = model(X, X_handcrafted)
+
+                
             loss = loss_fn(pred, y)
             optimizer.zero_grad()
 
@@ -121,16 +130,13 @@ def train_model(model, train_set=None, test_set=None, val_set=None, class_names=
             model.threshold = tmp_thresh
         print(f"Epoch {i+1}/{epochs} - Loss: {epoch_loss:.4f}")
         
-    if not is_handcrafted:
-        save_model(model, 'CNN_ECG_detection.pth')
-    else:
-        save_model(model, 'handcrafted_CNN_ECG_detection.pth')
+    real_save_path = os.path.join(save_path, save_name)
+    torch.save(model.state_dict(), real_save_path)
     print("Training complete! Model saved")
-    print(f"THRESHOLD: {model.threshold}")
     return model
 
 if __name__ == '__main__':
-    train_load, test_load, valid_load, class_names, features_name = get_dataloaders()
+    train_load, test_load, valid_load, class_names, features_list = get_dataloaders()
     out_classes = len(class_names)
     model = BaseModel(12, out_classes)
     train_model(model, train_load, test_load, valid_load, class_names, is_handcrafted=False, epochs=20, batch_size=128)

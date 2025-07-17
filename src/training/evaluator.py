@@ -1,5 +1,5 @@
 from src.data.loader import get_dataloaders
-from src.models.utils import get_device
+from src.utils.utils import get_device
 from src.models.base_model import BaseModel
 from src.models.cnn_handcrafted import HandcraftedModel
 import tqdm
@@ -111,9 +111,10 @@ def evaluate_model(model, test_loader, is_handcrafted=False, device=None):
 
 if __name__ == "__main__":
     is_handcrafted = True
-    _, test, _, names, features_num = get_dataloaders()
+    _, test, _, names, features = get_dataloaders()
     if is_handcrafted:
-        model = HandcraftedModel(in_channels=12, out_classes=len(names), handcrafted_classes=features_num)
+        base_model = BaseModel(in_channels=12, out_classes=len(names))
+        model = HandcraftedModel(base_model=base_model, handcrafted_classes=len(features))
         state_dict = torch.load("handcrafted_CNN_ECG_detection.pth", weights_only=False)
         model.load_state_dict(state_dict['model_state_dict'])
         model.threshold = state_dict['threshold']

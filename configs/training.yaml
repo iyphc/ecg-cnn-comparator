@@ -1,0 +1,5 @@
+training:
+  epochs: 10
+  lr: 1e-3
+  save_path: "models/checkpoints/"
+  save_name: "ECG_detection.pth"

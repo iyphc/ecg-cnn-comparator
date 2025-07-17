@@ -2,9 +2,9 @@ import hydra
 import os
 from omegaconf import DictConfig, OmegaConf
 import torch
-from src.utils.handlers import handler_train
-from src.utils.handlers import handler_compare
-from src.utils.handlers import handler_evaluate
+from src.ecg_analyzer.utils.handlers import handler_train
+from src.ecg_analyzer.utils.handlers import handler_compare
+from src.ecg_analyzer.utils.handlers import handler_evaluate
 
 @hydra.main(version_base="1.2", config_path="configs", config_name="config")
 def main(cfg: DictConfig) -> None:

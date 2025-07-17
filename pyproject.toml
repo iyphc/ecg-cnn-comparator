@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name            = "ecg-analyzer"
+version         = "0.1.0"
+description     = "Инструменты для анализа ЭКГ-сигналов на основе нейросетей"
+readme          = "README.md"
+requires-python = ">=3.8"
+license         = {file = "LICENSE"}
+
+dependencies = [
+    "torch>=1.9",
+    "numpy>=1.21",
+    "scikit-learn>=1.0",
+    "pandas>=1.3",
+    "matplotlib>=3.4",
+    "tqdm>=4.60",
+    "wfdb>=4.0",
+    "hydra-core>=1.1",
+]
+
+[project.scripts]
+ecg-analyze = "ecg_analyzer.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where   = ["src"]
+include = ["ecg_analyzer*"]

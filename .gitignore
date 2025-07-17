@@ -6,3 +6,4 @@ notebooks
 data/processed
 data/raw
 *pth
+src/ecg_analyzer/models/resnet18_2d.py

@@ -2,10 +2,10 @@ import os
 import hydra
 import torch
 from omegaconf import DictConfig, OmegaConf
-from src.ecg_analyzer.training.trainer import train_model
-from src.ecg_analyzer.training.evaluator import evaluate_model, basic_scores, compare_models
-from src.ecg_analyzer.data.loader import get_dataloaders
-from src.ecg_analyzer.utils.utils import get_device
+from ..training.trainer import train_model
+from ..training.evaluator import evaluate_model, basic_scores, compare_models
+from ..data.loader import get_dataloaders
+from .utils import get_device
 
 def handler_compare(cfg):
     device = get_device()

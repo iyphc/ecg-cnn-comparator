@@ -1,5 +1,5 @@
 import torch
-from src.ecg_analyzer.data.preprocess import load_ECG_dataset
+from .preprocess import load_ECG_dataset
 from torch.utils.data import DataLoader, random_split
 
 def get_dataloaders(valid_part=0.2, 

@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.ecg_analyzer.utils.utils import get_device
-from src.ecg_analyzer.models.base_model import BaseModel
+from ..utils.utils import get_device
+from .base_model import BaseModel
 
 class HandcraftedModel(nn.Module):
     def __init__(self, base_model, handcrafted_classes: int):

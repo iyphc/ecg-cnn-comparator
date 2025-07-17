@@ -2,10 +2,10 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.ecg_analyzer.utils.utils import get_device
-from src.ecg_analyzer.data.loader import get_dataloaders
-from src.ecg_analyzer.models.base_model import BaseModel
-from src.ecg_analyzer.models.cnn_handcrafted import HandcraftedModel
+from ..utils.utils import get_device
+from ..data.loader import get_dataloaders
+from ..models.base_model import BaseModel
+from ..models.cnn_handcrafted import HandcraftedModel
 
 import numpy as np
 from sklearn.metrics import f1_score

@@ -102,23 +102,8 @@ def train_model(
         or val_load is None
         or class_names is None
     ):
-        train_load, test_load, val_load, class_names, features_list = get_dataloaders(
-            batch_size=batch_size,
-            valid_part=val_part,
-            num_workers=num_workers,
-            raw_path=save_path,
-            sampling_rate=sampling_rate,
-            reduced_dataset=reduced_dataset,
-            features=features,
-        )
-
-    if is_handcrafted:
-        base_model = BaseModel(in_channels=12, out_classes=len(class_names)).to(device)
-        model = HandcraftedModel(
-            base_model=base_model, handcrafted_classes=handcrafted_size
-        ).to(device)
-    elif not is_handcrafted:
-        model = BaseModel(in_channels=12, out_classes=len(class_names)).to(device)
+        print("THE DATA IS EMPTY")
+        return
 
     model = model.to(device)
 

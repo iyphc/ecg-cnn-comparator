@@ -195,14 +195,6 @@ def process_dataset(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
     torch.save(test_dataset, 'data/processed/test_dataset.pt')
     torch.save(mlb.classes_, 'data/processed/diseases_names.pt')
     
-    # Сохраняем метаданные с параметрами для проверки совместимости
-    metadata = {
-        "features": list(features_list) if features_list else [],
-    }
-    
-    with open("data/processed/features.json", "w") as f:
-        json.dump(metadata, f, indent=4)
-    
     print("Data saved successfully!")
     return train_dataset, test_dataset, mlb.classes_, features_list
 
@@ -220,7 +212,7 @@ def load_ECG_dataset(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
         diseases_names = torch.load('data/processed/diseases_names.pt', weights_only=False)
     if features:
         features_list = features
-        
+
     if ((train_dataset is None) or (test_dataset is None) or (diseases_names is None) or not features_list):
         print("THERE IS NO CORRECT DATASET")
         train_dataset, test_dataset, diseases_names, features_list = process_dataset(path=path, sampling_rate=sampling_rate, reduced_dataset=reduced_dataset, features=features)

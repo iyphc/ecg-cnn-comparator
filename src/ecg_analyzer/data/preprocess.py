@@ -196,22 +196,30 @@ def process_dataset(
     Y["one_hot"] = [row.tolist() for row in y_onehot]
 
     test_fold = 10
-    mask_train = Y["strat_fold"] != test_fold
+    val_fold = 9
+    mask_train = (Y["strat_fold"] != test_fold) & (Y["strat_fold"] != val_fold)
+    mask_val = Y["strat_fold"] == val_fold
     mask_test = Y["strat_fold"] == test_fold
 
     X_train = X[mask_train.to_numpy()]
+    X_val = X[mask_val.to_numpy()]
     X_test = X[mask_test.to_numpy()]
 
     y_train = np.array(Y[mask_train]["one_hot"].tolist(), dtype=np.float32)
+    y_val = np.array(Y[mask_val]["one_hot"].tolist(), dtype=np.float32)
     y_test = np.array(Y[mask_test]["one_hot"].tolist(), dtype=np.float32)
 
     os.makedirs("data/processed", exist_ok=True)
 
     handcrafted_train = X_handcrafted[mask_train.to_numpy()]
+    handcrafted_val = X_handcrafted[mask_val.to_numpy()]
     handcrafted_test = X_handcrafted[mask_test.to_numpy()]
 
     train_dataset = ECG_Dataset(
         signals=X_train, labels=y_train, handcrafted_features=handcrafted_train
+    )
+    val_dataset = ECG_Dataset(
+        signals=X_val, labels=y_val, handcrafted_features=handcrafted_val
     )
     test_dataset = ECG_Dataset(
         signals=X_test, labels=y_test, handcrafted_features=handcrafted_test
@@ -219,11 +227,12 @@ def process_dataset(
 
     # Всегда сохраняем файлы (перезаписываем существующие)
     torch.save(train_dataset, "data/processed/train_dataset.pt")
+    torch.save(val_dataset, "data/processed/val_dataset.pt")
     torch.save(test_dataset, "data/processed/test_dataset.pt")
     torch.save(mlb.classes_, "data/processed/diseases_names.pt")
 
     print("Data saved successfully!")
-    return train_dataset, test_dataset, mlb.classes_, features_list
+    return train_dataset, val_dataset, test_dataset, mlb.classes_, features_list
 
 
 def load_ECG_dataset(
@@ -233,6 +242,7 @@ def load_ECG_dataset(
     features=None,
 ):
     train_dataset = None
+    val_dataset = None
     test_dataset = None
     diseases_names = None
     features_list = []
@@ -240,6 +250,8 @@ def load_ECG_dataset(
         train_dataset = torch.load(
             "data/processed/train_dataset.pt", weights_only=False
         )
+    if os.path.exists("data/processed/val_dataset.pt"):
+        val_dataset = torch.load("data/processed/val_dataset.pt", weights_only=False)
     if os.path.exists("data/processed/test_dataset.pt"):
         test_dataset = torch.load("data/processed/test_dataset.pt", weights_only=False)
     if os.path.exists("data/processed/diseases_names.pt"):
@@ -251,17 +263,20 @@ def load_ECG_dataset(
 
     if (
         (train_dataset is None)
+        or (val_dataset is None)
         or (test_dataset is None)
         or (diseases_names is None)
         or not features_list
     ):
         print("THERE IS NO CORRECT DATASET")
-        train_dataset, test_dataset, diseases_names, features_list = process_dataset(
-            path=path,
-            sampling_rate=sampling_rate,
-            reduced_dataset=reduced_dataset,
-            features=features,
+        train_dataset, val_dataset, test_dataset, diseases_names, features_list = (
+            process_dataset(
+                path=path,
+                sampling_rate=sampling_rate,
+                reduced_dataset=reduced_dataset,
+                features=features,
+            )
         )
 
     print("Data loaded")
-    return train_dataset, test_dataset, diseases_names, features_list
+    return train_dataset, val_dataset, test_dataset, diseases_names, features_list

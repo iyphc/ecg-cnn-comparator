@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from ..utils.utils import get_device
 from .base_model import BaseModel
 
+
 class HandcraftedModel(nn.Module):
     def __init__(self, base_model, handcrafted_classes: int):
         super().__init__()
@@ -25,12 +26,14 @@ class HandcraftedModel(nn.Module):
         if x.dim() != 2:
             x = torch.flatten(x, start_dim=1)
             if x.size(1) != self.out_classes:
-                raise ValueError(f"Output from base model expected to have size {self.out_classes}, but got {x.size(1)}")
+                raise ValueError(
+                    f"Output from base model expected to have size {self.out_classes}, but got {x.size(1)}"
+                )
 
         handcrafted = F.relu(self.hc_spread(handcrafted))
-        
-        comb = torch.cat([x, handcrafted], dim=1)          # (batch_size, out_classes + 32)
-        
-        x = F.relu(self.hc_fc(comb))                       # (batch_size, 128)
-        x = self.fc(x)                                     # (batch_size, out_classes)
+
+        comb = torch.cat([x, handcrafted], dim=1)  # (batch_size, out_classes + 32)
+
+        x = F.relu(self.hc_fc(comb))  # (batch_size, 128)
+        x = self.fc(x)  # (batch_size, out_classes)
         return x

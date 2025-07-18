@@ -1,4 +1,3 @@
-
 from .utils import get_device
 
 __all__ = [

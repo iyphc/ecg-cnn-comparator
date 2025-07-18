@@ -3,7 +3,7 @@ from .evaluator import evaluate_model, basic_scores
 
 __all__ = [
     "train_model",
-    "validate", 
+    "validate",
     "evaluate_model",
     "basic_scores",
 ]

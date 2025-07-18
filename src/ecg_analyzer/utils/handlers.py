@@ -5,7 +5,7 @@ from omegaconf import DictConfig, OmegaConf
 from ..training.trainer import train_model
 from ..training.evaluator import evaluate_model, basic_scores, compare_models
 from ..data.loader import get_dataloaders
-from .utils import get_device
+from .utils import get_device, load_model
 
 
 def handler_compare(cfg):
@@ -39,15 +39,13 @@ def handler_compare(cfg):
 
     if is_handcrafted and handcrafted_model is not None:
         if os.path.exists(save_handcrafted_path):
-            handcrafted_model.load_state_dict(
-                torch.load(save_handcrafted_path, map_location=device)
-            )
+            load_model(handcrafted_model, save_handcrafted_path)
             print("HANDCRAFTED MODEL IS LOADED")
         else:
             print(f"NO MODEL AT {save_handcrafted_path}")
             return
     if os.path.exists(save_path):
-        base_model.load_state_dict(torch.load(save_path, map_location=device))
+        load_model(base_model, save_path)
         print("BASE MODEL IS LOADED")
     else:
         print(f"NO MODEL AT {save_path}")
@@ -148,10 +146,12 @@ def handler_evaluate(cfg):
         else cfg.training.save_name
     )
     save_path = os.path.join(cfg.training.save_path, save_name)
-
-    checkpoint = torch.load(save_path, map_location=device)
-    model.load_state_dict(checkpoint)
-    print(f"MODEL IS LOADED FROM {save_path}")
+    try:
+        load_model(model, save_path)
+        print(f"MODEL IS LOADED FROM {save_path}")
+    except:
+        print("MODEL IS NOT LOADED / LOADED WRONG")
+        return
 
     all_preds, all_true = evaluate_model(
         model, test_loader, is_handcrafted=is_handcrafted

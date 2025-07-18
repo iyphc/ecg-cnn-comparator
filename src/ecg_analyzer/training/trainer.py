@@ -2,7 +2,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from ..utils.utils import get_device
+from ..utils.utils import get_device, save_model
 from ..data.loader import get_dataloaders
 from ..models.base_model import BaseModel
 from ..models.cnn_handcrafted import HandcraftedModel
@@ -170,6 +170,7 @@ def train_model(
         print(f"Epoch {i+1}/{epochs} - Loss: {epoch_loss:.4f}")
 
     real_save_path = os.path.join(save_path, save_name)
-    torch.save(model.state_dict(), real_save_path)
+    save_model(model, real_save_path)
+
     print("Training complete! Model saved")
     return model

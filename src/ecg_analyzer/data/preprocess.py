@@ -218,10 +218,8 @@ def load_ECG_dataset(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
         test_dataset = torch.load('data/processed/test_dataset.pt', weights_only=False)
     if (os.path.exists('data/processed/diseases_names.pt')):
         diseases_names = torch.load('data/processed/diseases_names.pt', weights_only=False)
-    if (os.path.exists('data/processed/features.json')):
-        with open('data/processed/features.json', 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            features_list = data["features"]
+    if features:
+        features_list = features
         
     if ((train_dataset is None) or (test_dataset is None) or (diseases_names is None) or not features_list):
         print("THERE IS NO CORRECT DATASET")

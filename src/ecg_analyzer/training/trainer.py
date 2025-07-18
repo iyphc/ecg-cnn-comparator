@@ -82,6 +82,7 @@ def train_model(
     learning_rate=0.001,
     val_part=0.2,
     is_handcrafted=False,
+    handcrafted_size=0,
     batch_size=128,
     save_path="models/checkpoints",
     save_name="no_name_model.pth",
@@ -111,10 +112,7 @@ def train_model(
             features=features,
         )
 
-    size = len(train_load)
-
     if is_handcrafted:
-        handcrafted_size = next(iter(train_load))[1].shape[1]
         base_model = BaseModel(in_channels=12, out_classes=len(class_names)).to(device)
         model = HandcraftedModel(
             base_model=base_model, handcrafted_classes=handcrafted_size

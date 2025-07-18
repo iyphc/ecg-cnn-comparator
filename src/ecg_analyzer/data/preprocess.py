@@ -207,9 +207,6 @@ def process_dataset(
 
     os.makedirs("data/processed", exist_ok=True)
 
-    train_df = pd.DataFrame(y_train, columns=mlb.classes_)
-    test_df = pd.DataFrame(y_test, columns=mlb.classes_)
-
     handcrafted_train = X_handcrafted[mask_train.to_numpy()]
     handcrafted_test = X_handcrafted[mask_test.to_numpy()]
 

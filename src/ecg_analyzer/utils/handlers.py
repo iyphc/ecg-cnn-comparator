@@ -110,6 +110,7 @@ def handler_train(cfg):
         valid_loader,
         class_names,
         is_handcrafted=is_handcrafted,
+        handcrafted_size=len(features_list),
         epochs=cfg.training.epochs,
         batch_size=cfg.data.batch_size,
         learning_rate=cfg.training.lr,

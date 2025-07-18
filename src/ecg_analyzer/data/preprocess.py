@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 from sklearn.preprocessing import MultiLabelBinarizer
-from ..utils.constants import REDUCED_DISEASES_LIST
 
 class ECG_Dataset(Dataset):
     def __init__(
@@ -87,10 +86,9 @@ def normalize(signals: np.ndarray) -> np.ndarray:
     mean = np.mean(signals, axis=1, keepdims=True)
     std = np.std(signals, axis=1, keepdims=True)
 
-    # with np.errstate(divide='ignore', invalid='ignore'):
-    #     X = np.where(std != 0, (signals - mean) / std, 0)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        X = np.where(std != 0, (signals - mean) / std, 0)
 
-    X = np.where(std != 0, (signals - mean) / std, 0)
     return X
 
 def handcrafted_extraction(df: pd.DataFrame, features):
@@ -118,7 +116,7 @@ def handcrafted_extraction(df: pd.DataFrame, features):
     
     return binary_features, non_binary_features
 
-def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
+def process_dataset(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
             sampling_rate=100, reduced_dataset=None, features=None):
     
     print("STARTED PREPAIRING DATASET\n")
@@ -192,16 +190,18 @@ def handle(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
     train_dataset = ECG_Dataset(signals=X_train, labels=y_train, handcrafted_features=handcrafted_train)
     test_dataset = ECG_Dataset(signals=X_test, labels=y_test, handcrafted_features=handcrafted_test)
 
-    if (not os.path.exists('data/processed/train_dataset.pt')):
-        torch.save(train_dataset, 'data/processed/train_dataset.pt')
-    if (not os.path.exists('data/processed/test_dataset.pt')):
-        torch.save(test_dataset, 'data/processed/test_dataset.pt')
-    if (not os.path.exists('data/processed/diseases_names.pt')):
-        torch.save(mlb.classes_, 'data/processed/diseases_names.pt')
-    if (not os.path.exists('data/processed/features.json')):
-        with open("data/processed/features.json", "w") as f:
-            features_to_save = list(features_list) if features_list else []
-            json.dump({"features": features_to_save}, f, indent=4)
+    # Всегда сохраняем файлы (перезаписываем существующие)
+    torch.save(train_dataset, 'data/processed/train_dataset.pt')
+    torch.save(test_dataset, 'data/processed/test_dataset.pt')
+    torch.save(mlb.classes_, 'data/processed/diseases_names.pt')
+    
+    # Сохраняем метаданные с параметрами для проверки совместимости
+    metadata = {
+        "features": list(features_list) if features_list else [],
+    }
+    
+    with open("data/processed/features.json", "w") as f:
+        json.dump(metadata, f, indent=4)
     
     print("Data saved successfully!")
     return train_dataset, test_dataset, mlb.classes_, features_list
@@ -225,7 +225,7 @@ def load_ECG_dataset(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
         
     if ((train_dataset is None) or (test_dataset is None) or (diseases_names is None) or not features_list):
         print("THERE IS NO CORRECT DATASET")
-        train_dataset, test_dataset, diseases_names, features_list = handle(path=path, sampling_rate=sampling_rate, reduced_dataset=reduced_dataset, features=features)
+        train_dataset, test_dataset, diseases_names, features_list = process_dataset(path=path, sampling_rate=sampling_rate, reduced_dataset=reduced_dataset, features=features)
     
     print("Data loaded")
     return train_dataset, test_dataset, diseases_names, features_list

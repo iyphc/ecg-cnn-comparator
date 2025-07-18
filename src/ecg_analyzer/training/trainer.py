@@ -148,9 +148,3 @@ def train_model(model, train_load=None, test_load=None, val_load=None, class_nam
     torch.save(model.state_dict(), real_save_path)
     print("Training complete! Model saved")
     return model
-
-if __name__ == '__main__':
-    train_load, test_load, valid_load, class_names, features_list = get_dataloaders()
-    out_classes = len(class_names)
-    model = BaseModel(12, out_classes)
-    train_model(model, train_load, test_load, valid_load, class_names, is_handcrafted=False, epochs=20, batch_size=128)

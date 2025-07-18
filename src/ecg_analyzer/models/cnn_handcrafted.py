@@ -34,6 +34,3 @@ class HandcraftedModel(nn.Module):
         x = F.relu(self.hc_fc(comb))                       # (batch_size, 128)
         x = self.fc(x)                                     # (batch_size, out_classes)
         return x
-
-if __name__ == "__main__":
-    print("I am the Model with handcrafted features :)")

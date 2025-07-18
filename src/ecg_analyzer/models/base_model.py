@@ -46,10 +46,6 @@ class BaseModel(nn.Module):
         x = self.classifier(x)
         return x
 
-
-if __name__ == "__main__":
-    print("I am the BasicModel :)")
-
     
     
     

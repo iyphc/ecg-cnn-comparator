@@ -219,11 +219,3 @@ def load_ECG_dataset(path='data/raw/physionet.org/files/ptb-xl/1.0.1/',
     
     print("Data loaded")
     return train_dataset, test_dataset, diseases_names, features_list
-    
-
-if __name__ == "__main__":
-    import time
-    start = time.time()
-    load_ECG_dataset()
-    end = time.time()
-    print(round(end-start, 2))

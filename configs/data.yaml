@@ -9,4 +9,4 @@ data:
 
   sampling_rate: 100
 
-  diseases: ["SR", "SARRH", "SBRAD", "STACH", "AFIB"]
+  diseases: ["SARRH", "SBRAD", "STACH", "AFIB"]

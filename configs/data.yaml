@@ -9,4 +9,4 @@ data:
 
   sampling_rate: 100
 
-  reduced_dataset: ["SR", "SARRH", "SBRAD", "STACH", "AFIB"]
+  diseases: ["SR", "SARRH", "SBRAD", "STACH", "AFIB"]

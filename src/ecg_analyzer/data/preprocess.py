@@ -138,7 +138,7 @@ def handcrafted_extraction(df: pd.DataFrame, features):
 def process_dataset(
     path="data/raw/physionet.org/files/ptb-xl/1.0.1/",
     sampling_rate=100,
-    reduced_dataset=None,
+    diseases=None,
     features=None,
 ):
 
@@ -170,7 +170,7 @@ def process_dataset(
 
     agg_df = pd.read_csv(path + "scp_statements.csv", index_col=0)
 
-    def aggregate_diagnostic(scp_dict, reduced_dataset):
+    def aggregate_diagnostic(scp_dict, diseases):
         if not isinstance(scp_dict, dict):
             return []
 
@@ -179,15 +179,15 @@ def process_dataset(
             if code not in agg_df.index:
                 print(code)
                 continue
-            if reduced_dataset is not None:
-                if code in reduced_dataset:
+            if diseases is not None:
+                if code in diseases:
                     classes.add(code)
             else:
                 classes.add(code)
         return list(classes) if classes else []
 
     Y["diagnostic_superclass"] = Y["scp_codes"].apply(
-        lambda x: aggregate_diagnostic(x, reduced_dataset)
+        lambda x: aggregate_diagnostic(x, diseases)
     )
 
     mlb = MultiLabelBinarizer()
@@ -238,7 +238,7 @@ def process_dataset(
 def load_ECG_dataset(
     path="data/raw/physionet.org/files/ptb-xl/1.0.1/",
     sampling_rate=100,
-    reduced_dataset=None,
+    diseases=None,
     features=None,
 ):
     train_dataset = None
@@ -273,7 +273,7 @@ def load_ECG_dataset(
             process_dataset(
                 path=path,
                 sampling_rate=sampling_rate,
-                reduced_dataset=reduced_dataset,
+                diseases=diseases,
                 features=features,
             )
         )

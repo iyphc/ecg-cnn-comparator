@@ -17,7 +17,7 @@ def handler_compare(cfg):
             num_workers=cfg.data.num_workers,
             raw_path=cfg.data.raw_dir,
             sampling_rate=cfg.data.sampling_rate,
-            reduced_dataset=cfg.data.reduced_dataset,
+            diseases=cfg.data.diseases,
             features=cfg.data.features,
         )
     )
@@ -79,7 +79,7 @@ def handler_train(cfg):
             num_workers=cfg.data.num_workers,
             raw_path=cfg.data.raw_dir,
             sampling_rate=cfg.data.sampling_rate,
-            reduced_dataset=cfg.data.reduced_dataset,
+            diseases=cfg.data.diseases,
             features=cfg.data.features,
         )
     )
@@ -126,7 +126,7 @@ def handler_evaluate(cfg):
             num_workers=cfg.data.num_workers,
             raw_path=cfg.data.raw_dir,
             sampling_rate=cfg.data.sampling_rate,
-            reduced_dataset=cfg.data.reduced_dataset,
+            diseases=cfg.data.diseases,
             features=cfg.data.features,
         )
     )

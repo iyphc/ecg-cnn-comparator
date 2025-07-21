@@ -89,7 +89,7 @@ def train_model(
     device=None,
     num_workers=2,
     sampling_rate=100,
-    reduced_dataset=None,
+    diseases=None,
     features=None,
 ):
 

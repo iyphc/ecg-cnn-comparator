@@ -8,13 +8,13 @@ def get_dataloaders(
     num_workers=2,
     raw_path="data/raw/physionet.org/files/ptb-xl/1.0.1/",
     sampling_rate=100,
-    diseases=None,
+    pathologies=None,
     features=None,
 ):
     train_set, val_set, test_set, classes, features_list = load_ECG_dataset(
         path=raw_path,
         sampling_rate=sampling_rate,
-        diseases=diseases,
+        pathologies=pathologies,
         features=features,
     )
 

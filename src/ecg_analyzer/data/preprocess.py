@@ -97,7 +97,7 @@ def handcrafted_extraction(df: pd.DataFrame, features):
 def process_dataset(
     path="data/raw/physionet.org/files/ptb-xl/1.0.1/",
     sampling_rate=100,
-    diseases=None,
+    pathologies=None,
     features=None,
 ):
 
@@ -133,7 +133,7 @@ def process_dataset(
 
     agg_df = pd.read_csv(path + "scp_statements.csv", index_col=0)
 
-    def aggregate_diagnostic(scp_dict, diseases):
+    def aggregate_diagnostic(scp_dict, pathologies):
         if not isinstance(scp_dict, dict):
             return []
 
@@ -142,15 +142,15 @@ def process_dataset(
             if code not in agg_df.index:
                 print(code)
                 continue
-            if diseases is not None:
-                if code in diseases:
+            if pathologies is not None:
+                if code in pathologies:
                     classes.add(code)
             else:
                 classes.add(code)
         return list(classes) if classes else []
 
     Y["diagnostic_superclass"] = Y["scp_codes"].apply(
-        lambda x: aggregate_diagnostic(x, diseases)
+        lambda x: aggregate_diagnostic(x, pathologies)
     )
 
     mlb = MultiLabelBinarizer()
@@ -194,7 +194,7 @@ def process_dataset(
     torch.save(train_dataset, "data/processed/train_dataset.pt")
     torch.save(val_dataset, "data/processed/val_dataset.pt")
     torch.save(test_dataset, "data/processed/test_dataset.pt")
-    torch.save(mlb.classes_, "data/processed/diseases_names.pt")
+    torch.save(mlb.classes_, "data/processed/pathologies_names.pt")
 
     print("Data saved successfully!")
     return train_dataset, val_dataset, test_dataset, mlb.classes_, features
@@ -203,13 +203,13 @@ def process_dataset(
 def load_ECG_dataset(
     path="data/raw/physionet.org/files/ptb-xl/1.0.1/",
     sampling_rate=100,
-    diseases=None,
+    pathologies=None,
     features=None,
 ):
     train_dataset = None
     val_dataset = None
     test_dataset = None
-    diseases_names = None
+    pathologies_names = None
     features_list = []
     if os.path.exists("data/processed/train_dataset.pt"):
         train_dataset = torch.load(
@@ -219,9 +219,9 @@ def load_ECG_dataset(
         val_dataset = torch.load("data/processed/val_dataset.pt", weights_only=False)
     if os.path.exists("data/processed/test_dataset.pt"):
         test_dataset = torch.load("data/processed/test_dataset.pt", weights_only=False)
-    if os.path.exists("data/processed/diseases_names.pt"):
-        diseases_names = torch.load(
-            "data/processed/diseases_names.pt", weights_only=False
+    if os.path.exists("data/processed/pathologies_names.pt"):
+        pathologies_names = torch.load(
+            "data/processed/pathologies_names.pt", weights_only=False
         )
     if features:
         features_list = features
@@ -230,21 +230,21 @@ def load_ECG_dataset(
         (train_dataset is None)
         or (val_dataset is None)
         or (test_dataset is None)
-        or (diseases_names is None)
+        or (pathologies_names is None)
         or not features_list
     ):
         print("THERE IS NO CORRECT DATASET")
-        train_dataset, val_dataset, test_dataset, diseases_names, features_list = (
+        train_dataset, val_dataset, test_dataset, pathologies_names, features_list = (
             process_dataset(
                 path=path,
                 sampling_rate=sampling_rate,
-                diseases=diseases,
+                pathologies=pathologies,
                 features=features,
             )
         )
 
     print("Data loaded")
-    return train_dataset, val_dataset, test_dataset, diseases_names, features_list
+    return train_dataset, val_dataset, test_dataset, pathologies_names, features_list
 
 
 if __name__ == "__main__":

@@ -126,7 +126,7 @@ def train_model(
     device=None,
     num_workers=2,
     sampling_rate=100,
-    diseases=None,
+    pathologies=None,
     features=None,
     score_fn=sklearn.metrics.f1_score,
 ):

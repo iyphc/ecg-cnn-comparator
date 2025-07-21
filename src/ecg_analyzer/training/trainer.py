@@ -138,8 +138,7 @@ def train_model(
         or val_load is None
         or class_names is None
     ):
-        print("THE DATA IS EMPTY")
-        return
+        raise FileNotFoundError("Incorrect datasets received")
     model = model.to(device)
     pos_weight = calculate_pos_weight(train_load, device)
     loss_fn = get_loss_fn(pos_weight)

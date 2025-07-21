@@ -245,7 +245,3 @@ def load_ECG_dataset(
 
     print("Data loaded")
     return train_dataset, val_dataset, test_dataset, pathologies_names, features_list
-
-
-if __name__ == "__main__":
-    process_dataset()

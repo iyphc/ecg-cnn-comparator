@@ -25,9 +25,15 @@ def handler_compare(cfg):
     base_model = hydra.utils.instantiate(cfg.base_model, out_classes=len(class_names))
     handcrafted_model = None
     is_handcrafted = False
-    if hasattr(cfg, "handcrafted_model"):
+    if (
+        hasattr(cfg, "handcrafted_model")
+        and cfg.handcrafted_model is not None
+        and hasattr(cfg.handcrafted_model, "_target_")
+    ):
         handcrafted_model = hydra.utils.instantiate(
-            cfg.handcrafted_model, base_model=base_model
+            cfg.handcrafted_model,
+            base_model=base_model,
+            handcrafted_classes=len(features_list),
         )
         is_handcrafted = True
 
@@ -86,8 +92,16 @@ def handler_train(cfg):
     model = hydra.utils.instantiate(cfg.base_model, out_classes=len(class_names))
     is_handcrafted = False
     handcrafted = None
-    if hasattr(cfg, "handcrafted_model"):
-        handcrafted = hydra.utils.instantiate(cfg.handcrafted_model, base_model=model)
+    if (
+        hasattr(cfg, "handcrafted_model")
+        and cfg.handcrafted_model is not None
+        and hasattr(cfg.handcrafted_model, "_target_")
+    ):
+        handcrafted = hydra.utils.instantiate(
+            cfg.handcrafted_model,
+            base_model=model,
+            handcrafted_classes=len(features_list),
+        )
         is_handcrafted = True
 
     if is_handcrafted:
@@ -128,7 +142,11 @@ def handler_evaluate(cfg):
 
     model = hydra.utils.instantiate(cfg.base_model, out_classes=len(class_names))
     is_handcrafted = False
-    if hasattr(cfg, "handcrafted_model"):
+    if (
+        hasattr(cfg, "handcrafted_model")
+        and cfg.handcrafted_model is not None
+        and hasattr(cfg.handcrafted_model, "_target_")
+    ):
         model = hydra.utils.instantiate(cfg.handcrafted_model, base_model=model)
         is_handcrafted = True
 

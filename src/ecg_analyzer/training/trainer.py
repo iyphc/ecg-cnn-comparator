@@ -54,11 +54,10 @@ def validate(
     model.eval()
     all_probs = list()
     all_true = list()
-    total_val_loss = 0
-    val_epochs_num = 0
+    running_val_loss = 0
+    total = 0
     with torch.no_grad():
         for inputs, X_handcrafted, labels in tqdm(val_loader, desc="validation epoch"):
-            val_epochs_num += 1
             inputs = inputs.to(device)
             X_handcrafted = X_handcrafted.to(device)
             labels = labels.to(device)
@@ -67,7 +66,8 @@ def validate(
             else:
                 outputs = model(inputs)
             loss = loss_fn(outputs, labels)
-            total_val_loss += loss
+            running_val_loss += loss.item() * inputs.size(0)
+            total += labels.size(0)
             probs = torch.sigmoid(outputs).cpu().numpy()
             all_probs.extend(probs)
             all_true.extend(labels.cpu().numpy())
@@ -76,7 +76,7 @@ def validate(
     best_thresholds, mean_f1 = calculate_thresholds(
         all_probs, all_true, score_fn=score_fn
     )
-    val_loss = total_val_loss / val_epochs_num
+    val_loss = running_val_loss / total
     return best_thresholds, mean_f1, val_loss
 
 
@@ -149,16 +149,18 @@ def train_model(
     optimizer = get_optimizer(model, learning_rate)
     best_score = 0
     for i in range(epochs):
-        epoch_loss = train_one_epoch(
+        train_epoch_loss = train_one_epoch(
             model, train_load, loss_fn, optimizer, device, is_handcrafted
         )
-        tmp_thresh, tmp_best_score, _ = validate(
+        tmp_thresh, tmp_best_score, val_epoch_loss = validate(
             model, val_load, device, is_handcrafted, score_fn=score_fn
         )
         if tmp_best_score > best_score:
             model.threshold = tmp_thresh
             best_score = tmp_best_score
-        print(f"Epoch {i+1}/{epochs} - Loss: {epoch_loss:.4f}")
+        print(
+            f"Epoch {i+1}/{epochs} - Train loss: {train_epoch_loss:.4f} / Val loss: {val_epoch_loss:.4f}"
+        )
     real_save_path = os.path.join(save_path, save_name)
     save_model(model, real_save_path)
     print("Training complete! Model saved")

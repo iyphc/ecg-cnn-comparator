@@ -117,17 +117,10 @@ def train_model(
     class_names=None,
     epochs=10,
     learning_rate=0.001,
-    val_part=0.2,
     is_handcrafted=False,
-    handcrafted_size=0,
-    batch_size=128,
     save_path="models/checkpoints",
     save_name="no_name_model.pth",
     device=None,
-    num_workers=2,
-    sampling_rate=100,
-    pathologies=None,
-    features=None,
     score_fn=sklearn.metrics.f1_score,
 ):
     if device is None:

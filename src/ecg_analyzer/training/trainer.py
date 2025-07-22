@@ -44,13 +44,21 @@ def calculate_thresholds(all_probs, all_true, score_fn=sklearn.metrics.f1_score)
 
 
 def validate(
-    model, val_loader, device, is_handcrafted, score_fn=sklearn.metrics.f1_score
+    model,
+    val_loader,
+    device,
+    is_handcrafted,
+    score_fn=sklearn.metrics.f1_score,
+    loss_fn=nn.BCEWithLogitsLoss(),
 ):
     model.eval()
-    all_probs = []
-    all_true = []
+    all_probs = list()
+    all_true = list()
+    total_val_loss = 0
+    val_epochs_num = 0
     with torch.no_grad():
-        for inputs, X_handcrafted, labels in tqdm(val_loader, desc="validate"):
+        for inputs, X_handcrafted, labels in tqdm(val_loader, desc="validation epoch"):
+            val_epochs_num += 1
             inputs = inputs.to(device)
             X_handcrafted = X_handcrafted.to(device)
             labels = labels.to(device)
@@ -58,6 +66,8 @@ def validate(
                 outputs = model(inputs, X_handcrafted)
             else:
                 outputs = model(inputs)
+            loss = loss_fn(outputs, labels)
+            total_val_loss += loss
             probs = torch.sigmoid(outputs).cpu().numpy()
             all_probs.extend(probs)
             all_true.extend(labels.cpu().numpy())
@@ -66,7 +76,8 @@ def validate(
     best_thresholds, mean_f1 = calculate_thresholds(
         all_probs, all_true, score_fn=score_fn
     )
-    return best_thresholds, mean_f1
+    val_loss = total_val_loss / val_epochs_num
+    return best_thresholds, mean_f1, val_loss
 
 
 def calculate_pos_weight(train_load, device):
@@ -141,7 +152,7 @@ def train_model(
         epoch_loss = train_one_epoch(
             model, train_load, loss_fn, optimizer, device, is_handcrafted
         )
-        tmp_thresh, tmp_best_f1 = validate(
+        tmp_thresh, tmp_best_f1, _ = validate(
             model, val_load, device, is_handcrafted, score_fn=score_fn
         )
         if tmp_best_f1 > best_f1:

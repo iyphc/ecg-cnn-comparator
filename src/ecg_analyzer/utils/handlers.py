@@ -147,7 +147,11 @@ def handler_evaluate(cfg):
         and cfg.handcrafted_model is not None
         and hasattr(cfg.handcrafted_model, "_target_")
     ):
-        model = hydra.utils.instantiate(cfg.handcrafted_model, base_model=model)
+        model = hydra.utils.instantiate(
+            cfg.handcrafted_model,
+            base_model=model,
+            handcrafted_classes=len(features_list),
+        )
         is_handcrafted = True
 
     save_name = (

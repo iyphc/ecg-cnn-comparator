@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import torch
 import os
-from sklearn.metrics import f1_score, roc_auc_score, recall_score, confusion_matrix
+from sklearn.metrics import f1_score, roc_auc_score, recall_score
 from collections import defaultdict
 
 

@@ -147,17 +147,17 @@ def train_model(
     pos_weight = calculate_pos_weight(train_load, device)
     loss_fn = get_loss_fn(pos_weight)
     optimizer = get_optimizer(model, learning_rate)
-    best_f1 = 0
+    best_score = 0
     for i in range(epochs):
         epoch_loss = train_one_epoch(
             model, train_load, loss_fn, optimizer, device, is_handcrafted
         )
-        tmp_thresh, tmp_best_f1, _ = validate(
+        tmp_thresh, tmp_best_score, _ = validate(
             model, val_load, device, is_handcrafted, score_fn=score_fn
         )
-        if tmp_best_f1 > best_f1:
+        if tmp_best_score > best_score:
             model.threshold = tmp_thresh
-            best_f1 = tmp_best_f1
+            best_score = tmp_best_score
         print(f"Epoch {i+1}/{epochs} - Loss: {epoch_loss:.4f}")
     real_save_path = os.path.join(save_path, save_name)
     save_model(model, real_save_path)

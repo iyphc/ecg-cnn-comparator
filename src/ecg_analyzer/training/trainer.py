@@ -21,7 +21,9 @@ def calculate_thresholds(all_probs, all_true, score_fn=sklearn.metrics.f1_score)
         y_true_binary = all_true[:, class_idx]
         unique_labels = np.unique(y_true_binary)
         if len(unique_labels) < 2:
-            print(f"Класс {class_idx} содержит только один уникальный класс: {unique_labels}")
+            print(
+                f"Класс {class_idx} содержит только один уникальный класс: {unique_labels}"
+            )
             best_thresholds_list.append(0.5)
             best_scores_list.append(0.0)
             continue
@@ -41,7 +43,9 @@ def calculate_thresholds(all_probs, all_true, score_fn=sklearn.metrics.f1_score)
     return best_thresholds_list, mean_score
 
 
-def validate(model, val_loader, device, is_handcrafted, score_fn=sklearn.metrics.f1_score):
+def validate(
+    model, val_loader, device, is_handcrafted, score_fn=sklearn.metrics.f1_score
+):
     model.eval()
     all_probs = []
     all_true = []
@@ -59,7 +63,9 @@ def validate(model, val_loader, device, is_handcrafted, score_fn=sklearn.metrics
             all_true.extend(labels.cpu().numpy())
     all_probs = np.vstack(all_probs)
     all_true = np.array(all_true)
-    best_thresholds, mean_f1 = calculate_thresholds(all_probs, all_true, score_fn=score_fn)
+    best_thresholds, mean_f1 = calculate_thresholds(
+        all_probs, all_true, score_fn=score_fn
+    )
     return best_thresholds, mean_f1
 
 
@@ -120,9 +126,9 @@ def train_model(
     device=None,
     num_workers=2,
     sampling_rate=100,
-    diseases=None,
+    pathologies=None,
     features=None,
-    score_fn=sklearn.metrics.f1_score
+    score_fn=sklearn.metrics.f1_score,
 ):
     if device is None:
         device = get_device()
@@ -132,16 +138,19 @@ def train_model(
         or val_load is None
         or class_names is None
     ):
-        print("THE DATA IS EMPTY")
-        return
+        raise FileNotFoundError("Incorrect datasets received")
     model = model.to(device)
     pos_weight = calculate_pos_weight(train_load, device)
     loss_fn = get_loss_fn(pos_weight)
     optimizer = get_optimizer(model, learning_rate)
     best_f1 = 0
     for i in range(epochs):
-        epoch_loss = train_one_epoch(model, train_load, loss_fn, optimizer, device, is_handcrafted)
-        tmp_thresh, tmp_best_f1 = validate(model, val_load, device, is_handcrafted, score_fn=score_fn)
+        epoch_loss = train_one_epoch(
+            model, train_load, loss_fn, optimizer, device, is_handcrafted
+        )
+        tmp_thresh, tmp_best_f1 = validate(
+            model, val_load, device, is_handcrafted, score_fn=score_fn
+        )
         if tmp_best_f1 > best_f1:
             model.threshold = tmp_thresh
             best_f1 = tmp_best_f1

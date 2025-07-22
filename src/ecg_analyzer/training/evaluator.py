@@ -7,11 +7,10 @@ import numpy as np
 import pandas as pd
 import torch
 import os
-from sklearn.metrics import f1_score, roc_auc_score, recall_score, precision_score
+from sklearn.metrics import f1_score, roc_auc_score, recall_score, confusion_matrix
 from collections import defaultdict
 
 
-# Deprecated
 def confusion_matrix(all_true, all_pred):
     all_true = np.array(all_true)
     all_pred = np.array(all_pred)
@@ -23,15 +22,40 @@ def confusion_matrix(all_true, all_pred):
     return matrix
 
 
+def specificity_score(y_true, y_pred, average: str = "macro"):
+
+    matrix = confusion_matrix(y_true, y_pred)
+
+    specificity = None
+
+    if average == "macro":
+        tmp = matrix["TN"] / (matrix["TN"] + matrix["FP"])
+        specificity = tmp.sum() / tmp.shape[0]
+    elif average == "micro":
+        TN_sum = matrix["TN"].sum()
+        FP_sum = matrix["FP"].sum()
+        specificity = TN_sum / (TN_sum + FP_sum)
+    elif average == "weighted":
+        weights = matrix["TN"] + matrix["FP"]
+        specificity_none = np.where(weights == 0, 0.0, matrix["TN"] / weights)
+        if weights.sum() == 0:
+            specificity = 0.0
+        else:
+            specificity = np.average(specificity_none, weights=weights)
+    elif average == None:
+        specificity = matrix["TN"] / (matrix["TN"] + matrix["FP"])
+    else:
+        raise ValueError(f"Unknown average type: {average}")
+
+    return specificity
+
+
 def basic_scores(all_true, all_pred, threshold=0.5):
     scores = {}
 
     all_pred_prob = np.array(all_pred)
     all_pred = np.array(all_pred) > threshold
 
-    scores["recall_samples"] = recall_score(
-        all_true, all_pred, average="samples", zero_division=0
-    )
     scores["recall_micro"] = recall_score(
         all_true, all_pred, average="micro", zero_division=0
     )
@@ -44,24 +68,12 @@ def basic_scores(all_true, all_pred, threshold=0.5):
     scores["recall_none"] = recall_score(
         all_true, all_pred, average=None, zero_division=0
     )
-    scores["precision_samples"] = precision_score(
-        all_true, all_pred, average="samples", zero_division=0
+    scores["specificity_micro"] = specificity_score(all_true, all_pred, average="micro")
+    scores["specificity_macro"] = specificity_score(all_true, all_pred, average="macro")
+    scores["specificity_weighted"] = specificity_score(
+        all_true, all_pred, average="weighted"
     )
-    scores["precision_micro"] = precision_score(
-        all_true, all_pred, average="micro", zero_division=0
-    )
-    scores["precision_macro"] = precision_score(
-        all_true, all_pred, average="macro", zero_division=0
-    )
-    scores["precision_weighted"] = precision_score(
-        all_true, all_pred, average="weighted", zero_division=0
-    )
-    scores["precision_none"] = precision_score(
-        all_true, all_pred, average=None, zero_division=0
-    )
-    scores["f1_samples"] = f1_score(
-        all_true, all_pred, average="samples", zero_division=0
-    )
+    scores["specificity_none"] = specificity_score(all_true, all_pred, average=None)
     scores["f1_micro"] = f1_score(all_true, all_pred, average="micro", zero_division=0)
     scores["f1_macro"] = f1_score(all_true, all_pred, average="macro", zero_division=0)
     scores["f1_weighted"] = f1_score(

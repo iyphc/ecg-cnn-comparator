@@ -17,7 +17,7 @@ def handler_compare(cfg):
             num_workers=cfg.data.num_workers,
             raw_path=cfg.data.raw_dir,
             sampling_rate=cfg.data.sampling_rate,
-            diseases=cfg.data.diseases,
+            pathologies=cfg.data.pathologies,
             features=cfg.data.features,
         )
     )
@@ -41,14 +41,13 @@ def handler_compare(cfg):
             load_model(handcrafted_model, save_handcrafted_path)
             print("HANDCRAFTED MODEL IS LOADED")
         else:
-            print(f"NO MODEL AT {save_handcrafted_path}")
-            return
+            raise FileNotFoundError(f"NO MODEL AT {save_handcrafted_path}")
+
     if os.path.exists(save_path):
         load_model(base_model, save_path)
         print("BASE MODEL IS LOADED")
     else:
-        print(f"NO MODEL AT {save_path}")
-        return
+        raise FileNotFoundError(f"NO MODEL AT {save_path}")
 
     model_list = [(base_model, "BASE")]
     if is_handcrafted and handcrafted_model is not None:
@@ -79,7 +78,7 @@ def handler_train(cfg):
             num_workers=cfg.data.num_workers,
             raw_path=cfg.data.raw_dir,
             sampling_rate=cfg.data.sampling_rate,
-            diseases=cfg.data.diseases,
+            pathologies=cfg.data.pathologies,
             features=cfg.data.features,
         )
     )
@@ -126,7 +125,7 @@ def handler_evaluate(cfg):
             num_workers=cfg.data.num_workers,
             raw_path=cfg.data.raw_dir,
             sampling_rate=cfg.data.sampling_rate,
-            diseases=cfg.data.diseases,
+            pathologies=cfg.data.pathologies,
             features=cfg.data.features,
         )
     )
@@ -147,8 +146,7 @@ def handler_evaluate(cfg):
         load_model(model, save_path)
         print(f"MODEL IS LOADED FROM {save_path}")
     except:
-        print("MODEL IS NOT LOADED / LOADED WRONG")
-        return
+        raise FileNotFoundError(f"NO MODEL AT {save_path}")
 
     all_preds, all_true = evaluate_model(
         model, test_loader, is_handcrafted=is_handcrafted

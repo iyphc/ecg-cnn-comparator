@@ -13,8 +13,8 @@ def handler_compare(cfg):
 
     train_loader, test_loader, valid_loader, class_names, features_list = (
         get_dataloaders(
-            batch_size=cfg.data.batch_size,
-            num_workers=cfg.data.num_workers,
+            batch_size=cfg.training.batch_size,
+            num_workers=cfg.training.num_workers,
             raw_path=cfg.data.raw_dir,
             sampling_rate=cfg.data.sampling_rate,
             pathologies=cfg.data.pathologies,
@@ -74,8 +74,8 @@ def handler_train(cfg):
 
     train_loader, test_loader, valid_loader, class_names, features_list = (
         get_dataloaders(
-            batch_size=cfg.data.batch_size,
-            num_workers=cfg.data.num_workers,
+            batch_size=cfg.training.batch_size,
+            num_workers=cfg.training.num_workers,
             raw_path=cfg.data.raw_dir,
             sampling_rate=cfg.data.sampling_rate,
             pathologies=cfg.data.pathologies,
@@ -117,8 +117,8 @@ def handler_evaluate(cfg):
 
     train_loader, test_loader, valid_loader, class_names, features_list = (
         get_dataloaders(
-            batch_size=cfg.data.batch_size,
-            num_workers=cfg.data.num_workers,
+            batch_size=cfg.training.batch_size,
+            num_workers=cfg.training.num_workers,
             raw_path=cfg.data.raw_dir,
             sampling_rate=cfg.data.sampling_rate,
             pathologies=cfg.data.pathologies,

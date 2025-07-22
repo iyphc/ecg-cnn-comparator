@@ -105,13 +105,9 @@ def handler_train(cfg):
         valid_loader,
         class_names,
         is_handcrafted=is_handcrafted,
-        handcrafted_size=len(features_list),
-        epochs=cfg.training.epochs,
-        batch_size=cfg.data.batch_size,
         learning_rate=cfg.training.lr,
         save_path=cfg.training.save_path,
         save_name=save_name,
-        features=cfg.data.features,
     )
     print(f"Модель сохранена по пути: {save_path}")
 

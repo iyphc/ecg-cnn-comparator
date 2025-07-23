@@ -2,6 +2,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from collections import defaultdict
 from ..utils.utils import get_device, save_model
 from ..data.loader import get_dataloaders
 from ..models.base_model import BaseModel
@@ -129,7 +130,6 @@ def train_model(
     epochs=10,
     learning_rate=0.001,
     is_handcrafted=False,
-    model_name="no_name_model",
     device=None,
     score_fn=sklearn.metrics.f1_score,
 ):
@@ -147,7 +147,7 @@ def train_model(
     loss_fn = get_loss_fn(pos_weight)
     optimizer = get_optimizer(model, learning_rate)
     best_score = 0
-    metadata = dict(dict(list()))
+    metadata = defaultdict(list)
     for i in range(epochs):
         train_epoch_loss = train_one_epoch(
             model, train_load, loss_fn, optimizer, device, is_handcrafted
@@ -161,8 +161,11 @@ def train_model(
         print(
             f"Epoch {i+1}/{epochs} - Train loss: {train_epoch_loss:.4f} / Val loss: {val_epoch_loss:.4f}"
         )
-        metadata[model_name]["train_loss"].append(train_epoch_loss)
-        metadata[model_name]["val_loss"].append(val_epoch_loss)
+        print(f"Epoch {i+1}/{epochs} - Val score: {tmp_best_score:.4f}")
+
+        metadata["train_loss"].append(train_epoch_loss)
+        metadata["val_loss"].append(val_epoch_loss)
+        metadata["score"].append(best_score)
 
     print("Training complete!")
     return model, metadata

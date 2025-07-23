@@ -1,12 +1,6 @@
-import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from collections import defaultdict
-from ..utils.utils import get_device, save_model
-from ..data.loader import get_dataloaders
-from ..models.base_model import BaseModel
-from ..models.cnn_handcrafted import HandcraftedModel
+from ..utils.utils import get_device
 
 import numpy as np
 import sklearn.metrics
@@ -147,7 +141,7 @@ def train_model(
     loss_fn = get_loss_fn(pos_weight)
     optimizer = get_optimizer(model, learning_rate)
     best_score = 0
-    metadata = defaultdict(list)
+    metadata = {"train_loss": list(), "val_loss": list(), "score_by_epoch": list()}
     for i in range(epochs):
         train_epoch_loss = train_one_epoch(
             model, train_load, loss_fn, optimizer, device, is_handcrafted
@@ -162,10 +156,9 @@ def train_model(
             f"Epoch {i+1}/{epochs} - Train loss: {train_epoch_loss:.4f} / Val loss: {val_epoch_loss:.4f}"
         )
         print(f"Epoch {i+1}/{epochs} - Val score: {tmp_best_score:.4f}")
-
         metadata["train_loss"].append(train_epoch_loss)
         metadata["val_loss"].append(val_epoch_loss)
-        metadata["score"].append(best_score)
+        metadata["score_by_epoch"].append(best_score)
 
     print("Training complete!")
     return model, metadata

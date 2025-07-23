@@ -129,8 +129,7 @@ def train_model(
     epochs=10,
     learning_rate=0.001,
     is_handcrafted=False,
-    save_path="models/checkpoints",
-    save_name="no_name_model.pth",
+    model_name="no_name_model",
     device=None,
     score_fn=sklearn.metrics.f1_score,
 ):
@@ -148,6 +147,7 @@ def train_model(
     loss_fn = get_loss_fn(pos_weight)
     optimizer = get_optimizer(model, learning_rate)
     best_score = 0
+    metadata = dict(dict(list()))
     for i in range(epochs):
         train_epoch_loss = train_one_epoch(
             model, train_load, loss_fn, optimizer, device, is_handcrafted
@@ -161,7 +161,8 @@ def train_model(
         print(
             f"Epoch {i+1}/{epochs} - Train loss: {train_epoch_loss:.4f} / Val loss: {val_epoch_loss:.4f}"
         )
-    real_save_path = os.path.join(save_path, save_name)
-    save_model(model, real_save_path)
-    print("Training complete! Model saved")
-    return model
+        metadata[model_name]["train_loss"].append(train_epoch_loss)
+        metadata[model_name]["val_loss"].append(val_epoch_loss)
+
+    print("Training complete!")
+    return model, metadata

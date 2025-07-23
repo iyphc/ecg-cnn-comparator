@@ -1,11 +1,11 @@
 import os
+import json
 import hydra
-import torch
 from omegaconf import DictConfig, OmegaConf
 from ..training.trainer import train_model
 from ..training.evaluator import evaluate_model, basic_scores, compare_models
 from ..data.loader import get_dataloaders
-from .utils import get_device, load_model
+from .utils import get_device, load_model, save_model
 
 
 def handler_compare(cfg):
@@ -37,8 +37,8 @@ def handler_compare(cfg):
         )
         is_handcrafted = True
 
-    save_path = os.path.join(cfg.training.save_path, cfg.training.save_name)
-    save_handcrafted_name = "handcrafted_" + cfg.training.save_name
+    save_path = os.path.join(cfg.training.save_path, f"{cfg.training.model_name}")
+    save_handcrafted_name = f"handcrafted_{cfg.training.model_name}"
     save_handcrafted_path = os.path.join(cfg.training.save_path, save_handcrafted_name)
     os.makedirs(cfg.training.save_path, exist_ok=True)
 
@@ -104,15 +104,14 @@ def handler_train(cfg):
         )
         is_handcrafted = True
 
+    model_name = cfg.training.model_name
+
     if is_handcrafted:
-        save_name = "handcrafted_" + cfg.training.save_name
-        save_path = os.path.join(cfg.training.save_path, save_name)
-    else:
-        save_name = cfg.training.save_name
-        save_path = os.path.join(cfg.training.save_path, save_name)
+        model_name = f"handcrafted_{model_name}"
 
     os.makedirs(cfg.training.save_path, exist_ok=True)
-    train_model(
+
+    _, metadata = train_model(
         handcrafted if is_handcrafted else model,
         train_loader,
         test_loader,
@@ -120,10 +119,18 @@ def handler_train(cfg):
         class_names,
         is_handcrafted=is_handcrafted,
         learning_rate=cfg.training.lr,
-        save_path=cfg.training.save_path,
-        save_name=save_name,
+        model_name=model_name,
     )
-    print(f"Модель сохранена по пути: {save_path}")
+
+    model_save_path = os.path.join(cfg.training.save_path, f"{model_name}.pth")
+    save_model(model, model_save_path)
+    print(f"Модель сохранена по пути: {model_save_path}")
+
+    json_name = f"{model_name}.json"
+    json_save_path = os.path.join(cfg.training.metadata_save_path, json_name)
+    with open(json_save_path, "w") as output:
+        json.dump(metadata, output)
+    print(f"Метаданные сохранены в файле: {json_save_path}")
 
 
 def handler_evaluate(cfg):
@@ -154,12 +161,12 @@ def handler_evaluate(cfg):
         )
         is_handcrafted = True
 
-    save_name = (
-        "handcrafted_" + cfg.training.save_name
+    model_name = (
+        f"handcrafted_{cfg.training.model_name}"
         if is_handcrafted
-        else cfg.training.save_name
+        else cfg.training.model_name
     )
-    save_path = os.path.join(cfg.training.save_path, save_name)
+    save_path = os.path.join(cfg.training.save_path, f"{model_name}.pth")
     try:
         load_model(model, save_path)
         print(f"MODEL IS LOADED FROM {save_path}")

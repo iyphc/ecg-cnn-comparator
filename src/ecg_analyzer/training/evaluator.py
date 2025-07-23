@@ -1,12 +1,6 @@
-from ..data.loader import get_dataloaders
 from ..utils.utils import get_device
-from ..models.base_model import BaseModel
-from ..models.cnn_handcrafted import HandcraftedModel
-import tqdm
 import numpy as np
-import pandas as pd
 import torch
-import os
 from sklearn.metrics import f1_score, roc_auc_score, recall_score
 from collections import defaultdict
 
@@ -56,34 +50,23 @@ def basic_scores(all_true, all_pred, threshold=0.5):
     all_pred_prob = np.array(all_pred)
     all_pred = np.array(all_pred) > threshold
 
-    scores["recall_micro"] = recall_score(
-        all_true, all_pred, average="micro", zero_division=0
-    )
     scores["recall_macro"] = recall_score(
         all_true, all_pred, average="macro", zero_division=0
     )
     scores["recall_weighted"] = recall_score(
         all_true, all_pred, average="weighted", zero_division=0
     )
-    scores["recall_none"] = recall_score(
-        all_true, all_pred, average=None, zero_division=0
-    )
-    scores["specificity_micro"] = specificity_score(all_true, all_pred, average="micro")
     scores["specificity_macro"] = specificity_score(all_true, all_pred, average="macro")
     scores["specificity_weighted"] = specificity_score(
         all_true, all_pred, average="weighted"
     )
-    scores["specificity_none"] = specificity_score(all_true, all_pred, average=None)
-    scores["f1_micro"] = f1_score(all_true, all_pred, average="micro", zero_division=0)
     scores["f1_macro"] = f1_score(all_true, all_pred, average="macro", zero_division=0)
     scores["f1_weighted"] = f1_score(
         all_true, all_pred, average="weighted", zero_division=0
     )
-    scores["f1_none"] = f1_score(all_true, all_pred, average=None, zero_division=0)
     scores["roc-auc-macro"] = roc_auc_score(
-        all_true, all_pred_prob, multi_class="ovo", average="macro"
+        all_true, all_pred_prob, multi_class="ovr", average="macro"
     )
-    scores["roc-auc-elems"] = roc_auc_score(all_true, all_pred_prob, average=None)
 
     return scores
 

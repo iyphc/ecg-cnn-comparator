@@ -1,6 +1,7 @@
 import os
 import json
 import hydra
+from datetime import datetime
 from omegaconf import DictConfig, OmegaConf
 from ..training.trainer import train_model
 from ..training.evaluator import evaluate_model, basic_scores, compare_models
@@ -124,10 +125,11 @@ def handler_train(cfg):
 
     model_save_path = os.path.join(cfg.training.save_path, f"{model_name}.pth")
     save_model(model, model_save_path)
-    print(f"Модель сохранена по пути: {model_save_path}")
+    print(f"Модель сохранена в файле: {model_save_path}")
 
     json_name = f"{model_name}.json"
-    json_save_path = os.path.join(cfg.training.metadata_save_path, json_name)
+    date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    json_save_path = os.path.join(cfg.training.metadata_save_path, date_time, json_name)
     with open(json_save_path, "w") as output:
         json.dump(metadata, output)
     print(f"Метаданные сохранены в файле: {json_save_path}")

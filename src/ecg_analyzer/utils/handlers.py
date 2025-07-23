@@ -118,35 +118,38 @@ def handler_train(cfg):
         test_loader,
         valid_loader,
         class_names,
-        is_handcrafted=is_handcrafted,
+        epochs=cfg.training.epochs,
         learning_rate=cfg.training.lr,
-        model_name=model_name,
+        is_handcrafted=is_handcrafted,
     )
 
     model_save_path = os.path.join(cfg.training.save_path, f"{model_name}.pth")
     save_model(model, model_save_path)
     print(f"Модель сохранена в файле: {model_save_path}")
 
-    json_name = f"{model_name}.json"
-    date_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    json_save_path = os.path.join(cfg.training.metadata_save_path, date_time, json_name)
+    date_time = datetime.now().strftime("%Y.%m.%d_%H:%M:%S")
+    json_name = f"{date_time}.json"
+    json_save_dir = os.path.join(
+        cfg.training.metadata_save_path,
+        model_name,
+    )
+    os.makedirs(json_save_dir, exist_ok=True)
+    json_save_path = os.path.join(json_save_dir, json_name)
     with open(json_save_path, "w") as output:
-        json.dump(metadata, output)
+        json.dump(metadata, output, indent=4)
     print(f"Метаданные сохранены в файле: {json_save_path}")
 
 
 def handler_evaluate(cfg):
     device = get_device()
 
-    train_loader, test_loader, valid_loader, class_names, features_list = (
-        get_dataloaders(
-            batch_size=cfg.training.batch_size,
-            num_workers=cfg.training.num_workers,
-            raw_path=cfg.data.raw_dir,
-            sampling_rate=cfg.data.sampling_rate,
-            pathologies=cfg.data.pathologies,
-            features=cfg.data.features,
-        )
+    _, test_loader, _, class_names, features_list = get_dataloaders(
+        batch_size=cfg.training.batch_size,
+        num_workers=cfg.training.num_workers,
+        raw_path=cfg.data.raw_dir,
+        sampling_rate=cfg.data.sampling_rate,
+        pathologies=cfg.data.pathologies,
+        features=cfg.data.features,
     )
 
     model = hydra.utils.instantiate(cfg.base_model, out_classes=len(class_names))

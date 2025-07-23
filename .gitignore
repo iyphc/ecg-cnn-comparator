@@ -9,3 +9,4 @@ data/raw
 src/ecg_analyzer/models/resnet18_2d.py
 src/ecg_analyzer.egg-info/
 outputs
+run_metadata/

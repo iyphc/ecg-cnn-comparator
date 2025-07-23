@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from ..utils.utils import get_device
-from .base_model import BaseModel
 
 
 class HandcraftedModel(nn.Module):

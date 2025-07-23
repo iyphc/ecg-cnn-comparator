@@ -2,7 +2,6 @@ import os
 import json
 import hydra
 from datetime import datetime
-from omegaconf import DictConfig, OmegaConf
 from ..training.trainer import train_model
 from ..training.evaluator import evaluate_model, basic_scores, compare_models
 from ..data.loader import get_dataloaders
@@ -123,8 +122,16 @@ def handler_train(cfg):
         is_handcrafted=is_handcrafted,
     )
 
+    all_preds, all_true = evaluate_model(
+        handcrafted if is_handcrafted else model,
+        test_loader,
+        is_handcrafted=is_handcrafted,
+    )
+    scores = basic_scores(all_true, all_preds)
+    metadata["scores"] = scores
+
     model_save_path = os.path.join(cfg.training.save_path, f"{model_name}.pth")
-    save_model(model, model_save_path)
+    save_model(handcrafted if is_handcrafted else model, model_save_path)
     print(f"Модель сохранена в файле: {model_save_path}")
 
     date_time = datetime.now().strftime("%Y.%m.%d_%H:%M:%S")
@@ -154,32 +161,35 @@ def handler_evaluate(cfg):
 
     model = hydra.utils.instantiate(cfg.base_model, out_classes=len(class_names))
     is_handcrafted = False
+    handcrafted = None
     if (
         hasattr(cfg, "handcrafted_model")
         and cfg.handcrafted_model is not None
         and hasattr(cfg.handcrafted_model, "_target_")
     ):
-        model = hydra.utils.instantiate(
+        handcrafted = hydra.utils.instantiate(
             cfg.handcrafted_model,
             base_model=model,
             handcrafted_classes=len(features_list),
         )
         is_handcrafted = True
 
-    model_name = (
-        f"handcrafted_{cfg.training.model_name}"
-        if is_handcrafted
-        else cfg.training.model_name
-    )
-    save_path = os.path.join(cfg.training.save_path, f"{model_name}.pth")
+    model_name = cfg.training.model_name
+
+    if is_handcrafted:
+        model_name = f"handcrafted_{model_name}"
+
+    model_save_path = os.path.join(cfg.training.save_path, f"{model_name}.pth")
     try:
-        load_model(model, save_path)
-        print(f"MODEL IS LOADED FROM {save_path}")
+        load_model(handcrafted if is_handcrafted else model, model_save_path)
+        print(f"MODEL IS LOADED FROM {model_save_path}")
     except:
-        raise FileNotFoundError(f"NO MODEL AT {save_path}")
+        raise FileNotFoundError(f"NO MODEL AT {model_save_path}")
 
     all_preds, all_true = evaluate_model(
-        model, test_loader, is_handcrafted=is_handcrafted
+        handcrafted if is_handcrafted else model,
+        test_loader,
+        is_handcrafted=is_handcrafted,
     )
     scores = basic_scores(all_true, all_preds)
 

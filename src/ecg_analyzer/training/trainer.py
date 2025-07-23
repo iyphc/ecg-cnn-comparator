@@ -153,7 +153,7 @@ def train_model(
             model, train_load, loss_fn, optimizer, device, is_handcrafted
         )
         tmp_thresh, tmp_best_score, val_epoch_loss = validate(
-            model, val_load, device, is_handcrafted, score_fn=score_fn
+            model, val_load, device, is_handcrafted, score_fn=score_fn, loss_fn=loss_fn
         )
         if tmp_best_score > best_score:
             model.threshold = tmp_thresh

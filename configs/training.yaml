@@ -5,4 +5,4 @@ training:
   lr: 1e-3
   save_path: "models/checkpoints/"
   model_name: "ECG_detection"
-  metadata_save_path: "outputs/"
+  metadata_save_path: "run_metadata/"

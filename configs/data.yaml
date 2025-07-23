@@ -1,6 +1,4 @@
 data:
-  num_workers: 2
-
   data_dir: "data/processed"
   raw_dir: "data/raw/physionet.org/files/ptb-xl/1.0.1/"
 

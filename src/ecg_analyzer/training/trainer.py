@@ -1,11 +1,6 @@
-import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from ..utils.utils import get_device, save_model
-from ..data.loader import get_dataloaders
-from ..models.base_model import BaseModel
-from ..models.cnn_handcrafted import HandcraftedModel
+from ..utils.utils import get_device
 
 import numpy as np
 import sklearn.metrics
@@ -44,13 +39,20 @@ def calculate_thresholds(all_probs, all_true, score_fn=sklearn.metrics.f1_score)
 
 
 def validate(
-    model, val_loader, device, is_handcrafted, score_fn=sklearn.metrics.f1_score
+    model,
+    val_loader,
+    device,
+    is_handcrafted,
+    score_fn=sklearn.metrics.f1_score,
+    loss_fn=nn.BCEWithLogitsLoss(),
 ):
     model.eval()
-    all_probs = []
-    all_true = []
+    all_probs = list()
+    all_true = list()
+    running_val_loss = 0
+    total = 0
     with torch.no_grad():
-        for inputs, X_handcrafted, labels in tqdm(val_loader, desc="validate"):
+        for inputs, X_handcrafted, labels in tqdm(val_loader, desc="validation epoch"):
             inputs = inputs.to(device)
             X_handcrafted = X_handcrafted.to(device)
             labels = labels.to(device)
@@ -58,6 +60,9 @@ def validate(
                 outputs = model(inputs, X_handcrafted)
             else:
                 outputs = model(inputs)
+            loss = loss_fn(outputs, labels)
+            running_val_loss += loss.item() * inputs.size(0)
+            total += labels.size(0)
             probs = torch.sigmoid(outputs).cpu().numpy()
             all_probs.extend(probs)
             all_true.extend(labels.cpu().numpy())
@@ -66,7 +71,8 @@ def validate(
     best_thresholds, mean_f1 = calculate_thresholds(
         all_probs, all_true, score_fn=score_fn
     )
-    return best_thresholds, mean_f1
+    val_loss = running_val_loss / total
+    return best_thresholds, mean_f1, val_loss
 
 
 def calculate_pos_weight(train_load, device):
@@ -117,17 +123,8 @@ def train_model(
     class_names=None,
     epochs=10,
     learning_rate=0.001,
-    val_part=0.2,
     is_handcrafted=False,
-    handcrafted_size=0,
-    batch_size=128,
-    save_path="models/checkpoints",
-    save_name="no_name_model.pth",
     device=None,
-    num_workers=2,
-    sampling_rate=100,
-    pathologies=None,
-    features=None,
     score_fn=sklearn.metrics.f1_score,
 ):
     if device is None:
@@ -143,19 +140,25 @@ def train_model(
     pos_weight = calculate_pos_weight(train_load, device)
     loss_fn = get_loss_fn(pos_weight)
     optimizer = get_optimizer(model, learning_rate)
-    best_f1 = 0
+    best_score = 0
+    metadata = {"train_loss": list(), "val_loss": list(), "score_by_epoch": list()}
     for i in range(epochs):
-        epoch_loss = train_one_epoch(
+        train_epoch_loss = train_one_epoch(
             model, train_load, loss_fn, optimizer, device, is_handcrafted
         )
-        tmp_thresh, tmp_best_f1 = validate(
-            model, val_load, device, is_handcrafted, score_fn=score_fn
+        tmp_thresh, tmp_best_score, val_epoch_loss = validate(
+            model, val_load, device, is_handcrafted, score_fn=score_fn, loss_fn=loss_fn
         )
-        if tmp_best_f1 > best_f1:
+        if tmp_best_score > best_score:
             model.threshold = tmp_thresh
-            best_f1 = tmp_best_f1
-        print(f"Epoch {i+1}/{epochs} - Loss: {epoch_loss:.4f}")
-    real_save_path = os.path.join(save_path, save_name)
-    save_model(model, real_save_path)
-    print("Training complete! Model saved")
-    return model
+            best_score = tmp_best_score
+        print(
+            f"Epoch {i+1}/{epochs} - Train loss: {train_epoch_loss:.4f} / Val loss: {val_epoch_loss:.4f}"
+        )
+        print(f"Epoch {i+1}/{epochs} - Val score: {tmp_best_score:.4f}")
+        metadata["train_loss"].append(train_epoch_loss)
+        metadata["val_loss"].append(val_epoch_loss)
+        metadata["score_by_epoch"].append(best_score)
+
+    print("Training complete!")
+    return model, metadata

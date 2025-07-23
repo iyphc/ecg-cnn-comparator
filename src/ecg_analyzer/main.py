@@ -1,4 +1,3 @@
-import sys
 import hydra
 from omegaconf import DictConfig, OmegaConf
 from ecg_analyzer.utils.handlers import handler_train, handler_compare, handler_evaluate

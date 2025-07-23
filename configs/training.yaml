@@ -1,6 +1,8 @@
 training:
   epochs: 10
   batch_size: 256
+  num_workers: 2
   lr: 1e-3
   save_path: "models/checkpoints/"
-  save_name: "ECG_detection.pth"
+  model_name: "ECG_detection"
+  metadata_save_path: "run_metadata/"

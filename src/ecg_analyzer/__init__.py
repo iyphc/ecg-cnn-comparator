@@ -7,7 +7,7 @@ except _md.PackageNotFoundError:  # dev-режим
 
 from .data.loader import get_dataloaders
 from .models.base_model import BaseModel
-from .models.resnet18 import ResNet
+from .models.resnet18 import ResNet18
 from .models.cnn_handcrafted import HandcraftedModel
 from .training.trainer import train_model, validate
 from .training.evaluator import evaluate_model
@@ -16,7 +16,7 @@ __all__ = [
     "__version__",
     "get_dataloaders",
     "BaseModel",
-    "ResNet",
+    "ResNet18",
     "HandcraftedModel",
     "train_model",
     "validate",

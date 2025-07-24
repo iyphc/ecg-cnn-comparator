@@ -1,2 +1,2 @@
-_target_: src.ecg_analyzer.models.base_model.BaseModel
+_target_: ecg_analyzer.models.base_model.BaseModel
 in_channels: 12

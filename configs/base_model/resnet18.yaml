@@ -1,0 +1,2 @@
+_target_: ecg_analyzer.models.resnet18.ResNet18
+in_channels: 12

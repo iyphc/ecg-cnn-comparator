@@ -50,34 +50,35 @@ def normalize(signals: np.ndarray) -> np.ndarray:
     return X
 
 
-def normalize_only_non_binary(feature_values):
-    if feature_values.size == 0:
-        return feature_values
+def normalize_only_non_binary(X: np.ndarray) -> np.ndarray:
+    if X.size == 0:
+        return X
 
-    binary_features = []
-    non_binary_features = []
+    isnan = np.isnan(X)
 
-    for i in range(feature_values.shape[1]):
-        col = feature_values[:, i]
-        unique_values = np.unique(col[~np.isnan(col)])
-        if len(unique_values) <= 2 and all(val in [0, 1, -1] for val in unique_values):
-            binary_features.append(col)
+    unique_values = [np.unique(col[~isnan[:, j]]) for j, col in enumerate(X.T)]
+    is_binary = np.array([len(u) <= 2 and set(u) <= {-1, 0, 1} for u in unique_values])
+
+    for j in np.where(is_binary)[0]:
+        col = X[:, j]
+        nan_idx = isnan[:, j]
+        if nan_idx.all():
+            fill = 0.0
         else:
-            non_binary_features.append(col)
+            vals, counts = np.unique(col[~nan_idx], return_counts=True)
+            fill = vals[np.argmax(counts)]
+        col[nan_idx] = fill
 
-    if binary_features:
-        binary_features = np.column_stack(binary_features)
-    else:
-        binary_features = np.empty((feature_values.shape[0], 0))
+    for j in np.where(~is_binary)[0]:
+        col = X[:, j]
+        nan_idx = isnan[:, j]
+        col[nan_idx] = np.nanmedian(col)
 
-    if non_binary_features:
-        non_binary_features = np.column_stack(non_binary_features)
-        non_binary_features = normalize(non_binary_features)
-    else:
-        non_binary_features = np.empty((feature_values.shape[0], 0))
+    nb_cols = np.where(~is_binary)[0]
+    if nb_cols.size:
+        X[:, nb_cols] = normalize(X[:, nb_cols])
 
-    features = np.hstack([binary_features, non_binary_features])
-    return features
+    return X
 
 
 def handcrafted_extraction(df: pd.DataFrame, features):

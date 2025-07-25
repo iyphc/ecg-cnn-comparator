@@ -183,9 +183,6 @@ def process_dataset(
     handcrafted_train = normalize_non_binary(handcrafted_train)
     handcrafted_val = split_and_fill(handcrafted_val)
     handcrafted_test = split_and_fill(handcrafted_test)
-    print(handcrafted_train)
-    print(handcrafted_val)
-    print(handcrafted_test)
 
     y_train = np.array(Y[mask_train]["one_hot"].tolist(), dtype=np.float32)
     y_val = np.array(Y[mask_val]["one_hot"].tolist(), dtype=np.float32)

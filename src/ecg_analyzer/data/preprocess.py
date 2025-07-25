@@ -67,7 +67,7 @@ def split_and_fill(features):
     for j in np.where(~is_binary)[0]:
         col = features[:, j]
         nan_idx = isnan[:, j]
-        col[nan_idx] = np.nanmedian(col)
+        col[nan_idx] = np.nanmean(col)
 
     return features
 
@@ -181,8 +181,8 @@ def process_dataset(
     handcrafted_test = X_handcrafted[mask_test.to_numpy()]
 
     handcrafted_train = normalize_non_binary(handcrafted_train)
-    handcrafted_val = split_and_fill(handcrafted_val)
-    handcrafted_test = split_and_fill(handcrafted_test)
+    handcrafted_val = normalize_non_binary(handcrafted_val)
+    handcrafted_test = normalize_non_binary(handcrafted_test)
 
     y_train = np.array(Y[mask_train]["one_hot"].tolist(), dtype=np.float32)
     y_val = np.array(Y[mask_val]["one_hot"].tolist(), dtype=np.float32)

@@ -25,10 +25,10 @@ class HandcraftedModel(nn.Module):
         if x.dim() != 2:
             x = torch.flatten(x, start_dim=1)
 
-        if x.size(1) != self.out_classes:
-            raise ValueError(
-                f"Output from base model expected to have size {self.out_classes}, but got {x.size(1)}"
-            )
+            if x.size(1) != self.out_classes:
+                raise ValueError(
+                    f"Output from base model expected to have size {self.out_classes}, but got {x.size(1)}"
+                )
 
         handcrafted = F.relu(self.hc_spread(handcrafted))
 

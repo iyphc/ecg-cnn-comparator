@@ -50,17 +50,13 @@ def normalize(signals: np.ndarray) -> np.ndarray:
     return X
 
 
-def normalize_only_non_binary(X: np.ndarray) -> np.ndarray:
-    if X.size == 0:
-        return X
-
-    isnan = np.isnan(X)
-
-    unique_values = [np.unique(col[~isnan[:, j]]) for j, col in enumerate(X.T)]
+def split_and_fill(features):
+    isnan = np.isnan(features)
+    unique_values = [np.unique(col[~isnan[:, j]]) for j, col in enumerate(features.T)]
     is_binary = np.array([len(u) <= 2 and set(u) <= {-1, 0, 1} for u in unique_values])
 
     for j in np.where(is_binary)[0]:
-        col = X[:, j]
+        col = features[:, j]
         nan_idx = isnan[:, j]
         if nan_idx.all():
             fill = 0.0
@@ -68,11 +64,22 @@ def normalize_only_non_binary(X: np.ndarray) -> np.ndarray:
             vals, counts = np.unique(col[~nan_idx], return_counts=True)
             fill = vals[np.argmax(counts)]
         col[nan_idx] = fill
-
     for j in np.where(~is_binary)[0]:
-        col = X[:, j]
+        col = features[:, j]
         nan_idx = isnan[:, j]
         col[nan_idx] = np.nanmedian(col)
+
+    return features
+
+
+def normalize_non_binary(X: np.ndarray) -> np.ndarray:
+    if X.size == 0:
+        return X
+
+    split_and_fill(X)
+
+    unique_values = [np.unique(col) for j, col in enumerate(X.T)]
+    is_binary = np.array([len(u) <= 2 and set(u) <= {-1, 0, 1} for u in unique_values])
 
     nb_cols = np.where(~is_binary)[0]
     if nb_cols.size:
@@ -173,7 +180,12 @@ def process_dataset(
     handcrafted_val = X_handcrafted[mask_val.to_numpy()]
     handcrafted_test = X_handcrafted[mask_test.to_numpy()]
 
-    handcrafted_train = normalize_only_non_binary(handcrafted_train)
+    handcrafted_train = normalize_non_binary(handcrafted_train)
+    handcrafted_val = split_and_fill(handcrafted_val)
+    handcrafted_test = split_and_fill(handcrafted_test)
+    print(handcrafted_train)
+    print(handcrafted_val)
+    print(handcrafted_test)
 
     y_train = np.array(Y[mask_train]["one_hot"].tolist(), dtype=np.float32)
     y_val = np.array(Y[mask_val]["one_hot"].tolist(), dtype=np.float32)
